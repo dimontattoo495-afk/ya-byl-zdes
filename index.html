@@ -22,8 +22,8 @@
     <p>Оставь короткую запись в общей книге интернета. Получи уникальный номер и секретную ссылку для управления своими записями.</p>
     <div class="counter">
       <div class="counter-row">
-        <span>ЗАНЯТО <span id="occupied">—</span> МЕСТ</span>
-        <span>из 1 000 000</span>
+        <span>РЕАЛЬНЫХ ЗАПИСЕЙ: <span id="occupied">—</span></span>
+        <span>демо не учитываются</span>
       </div>
       <div class="bar"><i id="progress" style="width:1%"></i></div>
     </div>
@@ -33,6 +33,9 @@
   <h2>Последние записи</h2>
   <div id="status" class="loading">Загрузка…</div>
   <div class="feed" id="feed"></div>
+  <div style="text-align:center;margin-top:18px">
+    <button id="showMore" class="btn2" style="display:none;cursor:pointer">Показать ещё</button>
+  </div>
 
   <footer>«Я БЫЛ ЗДЕСЬ» · MVP</footer>
 </div>
@@ -42,25 +45,55 @@
 <script>
 (async function(){
   const status = document.getElementById("status");
+  const feed = document.getElementById("feed");
+  const showMore = document.getElementById("showMore");
+
+  let visibleCount = 8;
+  let cachedRows = [];
+
+  function renderRows(){
+    const rows = cachedRows.slice(0, visibleCount);
+
+    if(!rows.length){
+      feed.innerHTML = `<article class="card"><div class="num">ПОКА ПУСТО</div><div class="msg">Станьте первым человеком, который оставит запись.</div></article>`;
+      showMore.style.display = "none";
+      return;
+    }
+
+    feed.innerHTML = rows.map(e=>{
+      const badge = e.is_demo
+        ? `<span style="display:inline-block;margin-left:8px;padding:3px 7px;border:1px solid #5a4a3b;border-radius:999px;font-size:10px;color:#d9a37b;vertical-align:1px">ПРИМЕР</span>`
+        : `<span style="display:inline-block;margin-left:8px;padding:3px 7px;border:1px solid #315b43;border-radius:999px;font-size:10px;color:#76e4a6;vertical-align:1px">РЕАЛЬНАЯ ЗАПИСЬ</span>`;
+
+      return `
+        <article class="card ${YBZ.esc(e.plan)}" onclick="location.href='./entry.html?no=${encodeURIComponent(e.public_no)}'" style="cursor:pointer">
+          <div class="num">ЗАПИСЬ №${YBZ.fmt(e.public_no)} ${badge}</div>
+          <div class="msg">${YBZ.esc(e.message)}</div>
+          <div class="meta">${YBZ.esc(e.name || "Без имени")}${e.city ? " · "+YBZ.esc(e.city) : ""}${e.is_demo ? " · пример" : ""}</div>
+        </article>`;
+    }).join("");
+
+    showMore.style.display = visibleCount < cachedRows.length ? "inline-block" : "none";
+  }
+
   try{
     const stats = await YBZ.rpc("ybz_get_stats");
     const s = Array.isArray(stats) ? stats[0] : stats;
-    const occupied = Number(s?.occupied || 184721);
+    const occupied = Number(s?.occupied || 0);
     document.getElementById("occupied").textContent = YBZ.fmt(occupied);
-    document.getElementById("progress").style.width = Math.max(1, Math.min(100, occupied/1000000*100))+"%";
 
-    const rows = await YBZ.rpc("ybz_get_feed",{p_limit:12});
-    const feed = document.getElementById("feed");
-    if(!rows || !rows.length){
-      feed.innerHTML = `<article class="card"><div class="num">ПОКА ПУСТО</div><div class="msg">Станьте первым человеком, который оставит запись.</div></article>`;
-    } else {
-      feed.innerHTML = rows.map(e=>`
-        <article class="card ${YBZ.esc(e.plan)}" onclick="location.href='./entry.html?no=${encodeURIComponent(e.public_no)}'" style="cursor:pointer">
-          <div class="num">ЗАПИСЬ №${YBZ.fmt(e.public_no)}</div>
-          <div class="msg">${YBZ.esc(e.message)}</div>
-          <div class="meta">${YBZ.esc(e.name || "Без имени")}${e.city ? " · "+YBZ.esc(e.city) : ""}${e.is_demo ? " · пример" : ""}</div>
-        </article>`).join("");
-    }
+    const max = Number(s?.total_slots || 1000000);
+    document.getElementById("progress").style.width =
+      Math.max(1, Math.min(100, occupied / Math.max(1, max) * 100)) + "%";
+
+    cachedRows = await YBZ.rpc("ybz_get_feed",{p_limit:50}) || [];
+    renderRows();
+
+    showMore.addEventListener("click",()=>{
+      visibleCount = Math.min(visibleCount + 8, cachedRows.length);
+      renderRows();
+    });
+
     status.style.display="none";
   }catch(err){
     status.className="notice error";
