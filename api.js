@@ -10,20 +10,25 @@
 
   async function rpc(fn, body={}){
     if(!configured()) throw new Error("Supabase ещё не настроен. Заполните config.js");
-    const res = await fetch(`${cfg.SUPABASE_URL}/rest/v1/rpc/${fn}`,{
+    const base = String(cfg.SUPABASE_URL).replace(/\/+$/,'');
+    const res = await fetch(`${base}/rest/v1/rpc/${fn}`,{
       method:"POST",
       headers:{
         "Content-Type":"application/json",
-        "apikey":cfg.SUPABASE_ANON_KEY,
-        "Authorization":`Bearer ${cfg.SUPABASE_ANON_KEY}`
+        "apikey":cfg.SUPABASE_ANON_KEY
       },
       body:JSON.stringify(body)
     });
+
     const txt = await res.text();
     let data = null;
     try{ data = txt ? JSON.parse(txt) : null; }catch{ data = txt; }
+
     if(!res.ok){
-      const msg = (data && (data.message || data.error || data.hint)) || `HTTP ${res.status}`;
+      const msg =
+        (data && typeof data === "object" && (data.message || data.error || data.hint || data.details)) ||
+        (typeof data === "string" && data) ||
+        `HTTP ${res.status}`;
       throw new Error(msg);
     }
     return data;
@@ -51,8 +56,11 @@
   }
 
   function fmt(n){ return new Intl.NumberFormat("ru-RU").format(Number(n||0)); }
+
   function esc(s){
-    return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
+    return String(s??"").replace(/[&<>"']/g,c=>({
+      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+    }[c]));
   }
 
   window.YBZ = {rpc,getOwnerKey,fmt,esc,configured};
