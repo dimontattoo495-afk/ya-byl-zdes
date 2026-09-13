@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Оставить след — Я БЫЛ ЗДЕСЬ</title>
+<link rel="stylesheet" href="./styles.css">
+</head>
+<body><div class="wrap">
+<div class="top"><a class="logo" href="./index.html">Я БЫЛ ЗДЕСЬ</a><div class="nav"><a href="./my.html">Мои записи</a></div></div>
+<div class="box">
+<h1>Оставить свою запись</h1>
+<p class="small">Сейчас работает тестовый режим: оплата пока не списывается.</p>
+<div id="messageBox"></div>
+<form id="form">
+<div class="grid">
+<div><label>Имя или псевдоним</label><input id="name" maxlength="80" placeholder="Например: Дмитрий"></div>
+<div><label>Город</label><input id="city" maxlength="100" placeholder="Например: Москва"></div>
+</div>
+<label>Твоя запись</label>
+<textarea id="message" maxlength="500" required placeholder="Напиши что-нибудь, что хочется оставить после себя..."></textarea>
+<label>Тип записи</label>
+<select id="plan">
+<option value="basic">Обычная — 99 ₽</option>
+<option value="highlight">Выделенная — 199 ₽</option>
+<option value="vip">VIP — 499 ₽</option>
+</select>
+<div class="pricebox"><span>Стоимость после подключения оплаты</span><strong id="price">99 ₽</strong></div>
+<button class="submit" id="submitBtn" type="submit">СОЗДАТЬ ДЕМО-ЗАПИСЬ</button>
+</form>
+</div></div>
+
+<script src="./config.js"></script><script src="./api.js"></script>
+<script>
+const prices={basic:99,highlight:199,vip:499};
+const plan=document.getElementById("plan");
+plan.addEventListener("change",()=>document.getElementById("price").textContent=prices[plan.value]+" ₽");
+
+document.getElementById("form").addEventListener("submit",async(e)=>{
+  e.preventDefault();
+  const btn=document.getElementById("submitBtn");
+  const box=document.getElementById("messageBox");
+  btn.disabled=true; btn.textContent="СОЗДАЁМ…";
+  box.innerHTML="";
+  try{
+    const ownerKey=YBZ.getOwnerKey();
+    const result=await YBZ.rpc("ybz_create_entry",{
+      p_owner_key:ownerKey,
+      p_name:document.getElementById("name").value.trim() || "Без имени",
+      p_city:document.getElementById("city").value.trim(),
+      p_message:document.getElementById("message").value.trim(),
+      p_plan:plan.value
+    });
+    const row=Array.isArray(result)?result[0]:result;
+    const key=encodeURIComponent(ownerKey);
+    location.href=`./my.html?key=${key}&new=${encodeURIComponent(row.public_no)}`;
+  }catch(err){
+    box.innerHTML=`<div class="notice error">${YBZ.esc(err.message)}</div>`;
+    btn.disabled=false; btn.textContent="СОЗДАТЬ ДЕМО-ЗАПИСЬ";
+  }
+});
+</script>
+</body></html>

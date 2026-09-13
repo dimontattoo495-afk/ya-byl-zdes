@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Я БЫЛ ЗДЕСЬ</title>
+<meta name="description" content="Оставь одну запись в общей книге интернета.">
+<link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <a class="logo" href="./index.html">Я БЫЛ ЗДЕСЬ</a>
+    <div class="nav">
+      <a href="./create.html">Оставить след</a>
+      <a href="./my.html">Мои записи</a>
+    </div>
+  </div>
+
+  <section class="hero">
+    <div style="font-size:12px;letter-spacing:.16em;color:#92929e">ОДНА ЗАПИСЬ · ОДИН НОМЕР · ОДИН СЛЕД</div>
+    <h1>Я БЫЛ ЗДЕСЬ</h1>
+    <p>Оставь короткую запись в общей книге интернета. Получи уникальный номер и секретную ссылку для управления своими записями.</p>
+    <div class="counter">
+      <div class="counter-row">
+        <span>ЗАНЯТО <span id="occupied">—</span> МЕСТ</span>
+        <span>из 1 000 000</span>
+      </div>
+      <div class="bar"><i id="progress" style="width:1%"></i></div>
+    </div>
+    <a class="cta" href="./create.html">ОСТАВИТЬ СЛЕД</a>
+  </section>
+
+  <h2>Последние записи</h2>
+  <div id="status" class="loading">Загрузка…</div>
+  <div class="feed" id="feed"></div>
+
+  <footer>«Я БЫЛ ЗДЕСЬ» · MVP</footer>
+</div>
+
+<script src="./config.js"></script>
+<script src="./api.js"></script>
+<script>
+(async function(){
+  const status = document.getElementById("status");
+  try{
+    const stats = await YBZ.rpc("ybz_get_stats");
+    const s = Array.isArray(stats) ? stats[0] : stats;
+    const occupied = Number(s?.occupied || 184721);
+    document.getElementById("occupied").textContent = YBZ.fmt(occupied);
+    document.getElementById("progress").style.width = Math.max(1, Math.min(100, occupied/1000000*100))+"%";
+
+    const rows = await YBZ.rpc("ybz_get_feed",{p_limit:12});
+    const feed = document.getElementById("feed");
+    if(!rows || !rows.length){
+      feed.innerHTML = `<article class="card"><div class="num">ПОКА ПУСТО</div><div class="msg">Станьте первым человеком, который оставит запись.</div></article>`;
+    } else {
+      feed.innerHTML = rows.map(e=>`
+        <article class="card ${YBZ.esc(e.plan)}" onclick="location.href='./entry.html?no=${encodeURIComponent(e.public_no)}'" style="cursor:pointer">
+          <div class="num">ЗАПИСЬ №${YBZ.fmt(e.public_no)}</div>
+          <div class="msg">${YBZ.esc(e.message)}</div>
+          <div class="meta">${YBZ.esc(e.name || "Без имени")}${e.city ? " · "+YBZ.esc(e.city) : ""}</div>
+        </article>`).join("");
+    }
+    status.style.display="none";
+  }catch(err){
+    status.className="notice error";
+    status.textContent=err.message;
+  }
+})();
+</script>
+</body></html>
