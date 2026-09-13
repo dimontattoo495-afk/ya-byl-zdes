@@ -20,61 +20,122 @@
 <div id="list"></div>
 </div></div>
 
-<script src="./config.js"></script><script src="./api.js"></script>
+<script src="./config.js"></script>
+<script src="./api.js"></script>
 <script>
-const ownerKey=YBZ.getOwnerKey();
-const secretUrl=new URL("./my.html",location.href);
-secretUrl.searchParams.set("key",ownerKey);
-document.getElementById("secretLink").value=secretUrl.href;
-document.getElementById("copyLink").onclick=async()=>{
+const ownerKey = YBZ.getOwnerKey();
+let currentEntries = [];
+
+const secretUrl = new URL("./my.html", location.href);
+secretUrl.searchParams.set("key", ownerKey);
+document.getElementById("secretLink").value = secretUrl.href;
+
+document.getElementById("copyLink").onclick = async () => {
   await navigator.clipboard.writeText(secretUrl.href);
-  document.getElementById("copyLink").textContent="Скопировано";
-  setTimeout(()=>document.getElementById("copyLink").textContent="Скопировать ссылку",1400);
+  const btn = document.getElementById("copyLink");
+  btn.textContent = "Скопировано";
+  setTimeout(() => btn.textContent = "Скопировать ссылку", 1400);
 };
-const qs=new URLSearchParams(location.search);
-if(qs.get("new")){
-  document.getElementById("newNotice").innerHTML=`<div class="notice"><b>Готово.</b> Запись №${YBZ.esc(qs.get("new"))} создана. Сохраните секретную ссылку.</div>`;
+
+const qs = new URLSearchParams(location.search);
+if (qs.get("new")) {
+  document.getElementById("newNotice").innerHTML =
+    `<div class="notice"><b>Готово.</b> Запись №${YBZ.esc(qs.get("new"))} создана. Сохраните секретную ссылку.</div>`;
 }
 
-async function load(){
-  const status=document.getElementById("status");
-  const list=document.getElementById("list");
-  try{
-    const rows=await YBZ.rpc("ybz_get_my_entries",{p_owner_key:ownerKey});
-    if(!rows || !rows.length){
-      list.innerHTML=`<div class="notice">У этого секретного ключа пока нет записей.</div>`;
-    }else{
-      list.innerHTML=rows.map(e=>`
+async function load() {
+  const status = document.getElementById("status");
+  const list = document.getElementById("list");
+  status.style.display = "block";
+  status.className = "loading";
+  status.textContent = "Загрузка…";
+
+  try {
+    currentEntries = await YBZ.rpc("ybz_get_my_entries", { p_owner_key: ownerKey }) || [];
+
+    if (!currentEntries.length) {
+      list.innerHTML = `<div class="notice">У этого секретного ключа пока нет записей.</div>`;
+    } else {
+      list.innerHTML = currentEntries.map(e => `
         <article class="card ${YBZ.esc(e.plan)}" style="margin-top:14px">
           <div class="num">ЗАПИСЬ №${YBZ.fmt(e.public_no)}</div>
           <div class="msg" id="msg-${e.public_no}">${YBZ.esc(e.message)}</div>
-          <div class="meta">Статус: ${YBZ.esc(e.status)} · просмотры: ${YBZ.fmt(e.views)} · ${YBZ.esc(e.price_rub)} ₽ (демо)</div>
+          <div class="meta">
+            Статус: ${YBZ.esc(e.status)} · просмотры: ${YBZ.fmt(e.views)} · ${YBZ.esc(e.price_rub)} ₽ (демо)
+          </div>
           <div class="actions">
             <a href="./entry.html?no=${encodeURIComponent(e.public_no)}">Открыть</a>
-            <button onclick="editEntry(${e.public_no}, ${JSON.stringify(e.message).replace(/</g,'\\u003c')})">Изменить</button>
-            <button onclick="toggleEntry(${e.public_no})">${e.status==="hidden"?"Опубликовать":"Скрыть"}</button>
+            <button type="button" data-action="edit" data-no="${e.public_no}">Изменить</button>
+            <button type="button" data-action="toggle" data-no="${e.public_no}">
+              ${e.status === "hidden" ? "Опубликовать" : "Скрыть"}
+            </button>
           </div>
         </article>`).join("");
     }
-    status.style.display="none";
-  }catch(err){
-    status.className="notice error"; status.textContent=err.message;
+
+    status.style.display = "none";
+  } catch (err) {
+    status.style.display = "block";
+    status.className = "notice error";
+    status.textContent = err.message;
   }
 }
-window.editEntry=async function(no,current){
-  const next=prompt("Новый текст записи:",current);
-  if(next===null)return;
-  try{
-    await YBZ.rpc("ybz_update_my_entry",{p_owner_key:ownerKey,p_public_no:no,p_message:next});
-    await load();
-  }catch(err){alert(err.message)}
-};
-window.toggleEntry=async function(no){
-  try{
-    await YBZ.rpc("ybz_toggle_my_entry",{p_owner_key:ownerKey,p_public_no:no});
-    await load();
-  }catch(err){alert(err.message)}
-};
+
+document.getElementById("list").addEventListener("click", async (event) => {
+  const btn = event.target.closest("button[data-action]");
+  if (!btn) return;
+
+  const no = Number(btn.dataset.no);
+  const action = btn.dataset.action;
+
+  if (action === "edit") {
+    const entry = currentEntries.find(x => Number(x.public_no) === no);
+    if (!entry) return;
+
+    const next = prompt("Новый текст записи:", entry.message);
+    if (next === null) return;
+
+    const cleaned = next.trim();
+    if (cleaned.length < 2 || cleaned.length > 500) {
+      alert("Текст должен быть от 2 до 500 символов.");
+      return;
+    }
+
+    btn.disabled = true;
+    try {
+      const ok = await YBZ.rpc("ybz_update_my_entry", {
+        p_owner_key: ownerKey,
+        p_public_no: no,
+        p_message: cleaned
+      });
+
+      if (ok === false) throw new Error("Не удалось изменить запись.");
+      await load();
+      alert("Запись изменена.");
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  if (action === "toggle") {
+    btn.disabled = true;
+    try {
+      await YBZ.rpc("ybz_toggle_my_entry", {
+        p_owner_key: ownerKey,
+        p_public_no: no
+      });
+      await load();
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      btn.disabled = false;
+    }
+  }
+});
+
 load();
 </script>
-</body></html>
+</body>
+</html>
