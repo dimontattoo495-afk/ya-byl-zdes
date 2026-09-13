@@ -24,7 +24,7 @@
 <option value="highlight">Выделенная — 100 ₽</option>
 <option value="vip">VIP — 300 ₽</option>
 </select>
-<div class="pricebox"><span>Стоимость после подключения оплаты</span><strong id="price">99 ₽</strong></div>
+<div class="pricebox"><span>Стоимость после подключения оплаты</span><strong id="price">50 ₽</strong></div>
 <button class="submit" id="submitBtn" type="submit">СОЗДАТЬ ДЕМО-ЗАПИСЬ</button>
 </form>
 </div></div>
@@ -34,6 +34,7 @@
 const prices={basic:50,highlight:100,vip:300};
 const plan=document.getElementById("plan");
 plan.addEventListener("change",()=>document.getElementById("price").textContent=prices[plan.value]+" ₽");
+document.getElementById("price").textContent=prices[plan.value]+" ₽";
 
 document.getElementById("form").addEventListener("submit",async(e)=>{
   e.preventDefault();
