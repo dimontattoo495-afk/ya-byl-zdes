@@ -25,7 +25,7 @@
       <article class="card ${YBZ.esc(e.plan)}">
         <div class="num">ЗАПИСЬ №${YBZ.fmt(e.public_no)}</div>
         <div class="msg" style="font-size:24px">${YBZ.esc(e.message)}</div>
-        <div class="meta">${YBZ.esc(e.name || "Без имени")}${e.city ? " · "+YBZ.esc(e.city):""} · просмотры: ${YBZ.fmt(e.views)}</div>
+        <div class="meta">${YBZ.esc(e.name || "Без имени")}${e.city ? " · "+YBZ.esc(e.city):""}${e.is_demo ? " · пример" : ""} · просмотры: ${YBZ.fmt(e.views)}</div>
       </article>
       <p><a class="cta" href="./create.html">ОСТАВИТЬ СВОЮ ЗАПИСЬ</a></p>`;
     status.style.display="none";

@@ -58,7 +58,7 @@
         <article class="card ${YBZ.esc(e.plan)}" onclick="location.href='./entry.html?no=${encodeURIComponent(e.public_no)}'" style="cursor:pointer">
           <div class="num">ЗАПИСЬ №${YBZ.fmt(e.public_no)}</div>
           <div class="msg">${YBZ.esc(e.message)}</div>
-          <div class="meta">${YBZ.esc(e.name || "Без имени")}${e.city ? " · "+YBZ.esc(e.city) : ""}</div>
+          <div class="meta">${YBZ.esc(e.name || "Без имени")}${e.city ? " · "+YBZ.esc(e.city) : ""}${e.is_demo ? " · пример" : ""}</div>
         </article>`).join("");
     }
     status.style.display="none";
