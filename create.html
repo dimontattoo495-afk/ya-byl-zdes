@@ -20,9 +20,9 @@
 <textarea id="message" maxlength="500" required placeholder="Напиши что-нибудь, что хочется оставить после себя..."></textarea>
 <label>Тип записи</label>
 <select id="plan">
-<option value="basic">Обычная — 99 ₽</option>
-<option value="highlight">Выделенная — 199 ₽</option>
-<option value="vip">VIP — 499 ₽</option>
+<option value="basic">Обычная — 50 ₽</option>
+<option value="highlight">Выделенная — 100 ₽</option>
+<option value="vip">VIP — 300 ₽</option>
 </select>
 <div class="pricebox"><span>Стоимость после подключения оплаты</span><strong id="price">99 ₽</strong></div>
 <button class="submit" id="submitBtn" type="submit">СОЗДАТЬ ДЕМО-ЗАПИСЬ</button>
@@ -31,7 +31,7 @@
 
 <script src="./config.js"></script><script src="./api.js"></script>
 <script>
-const prices={basic:99,highlight:199,vip:499};
+const prices={basic:50,highlight:100,vip:300};
 const plan=document.getElementById("plan");
 plan.addEventListener("change",()=>document.getElementById("price").textContent=prices[plan.value]+" ₽");
 
