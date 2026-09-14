@@ -19,7 +19,7 @@
 </div></div>
 
 <script src="./config.js"></script>
-<script src="./api-payments.js"></script>
+<script src="./api-payments.js?v=13"></script>
 <script>
 const ownerKey=YBZ.getOwnerKey();
 let currentEntries=[];
@@ -37,8 +37,16 @@ document.getElementById("copyLink").onclick=async()=>{
 
 const qs=new URLSearchParams(location.search);
 if(qs.get("paid")){
+  const paidNo=YBZ.esc(qs.get("paid"));
   document.getElementById("newNotice").innerHTML=
-    `<div class="notice"><b>Оплата подтверждена.</b> Запись №${YBZ.esc(qs.get("paid"))} опубликована.</div>`;
+    `<div class="notice">
+      <b>Оплата прошла успешно.</b> Запись №${paidNo} опубликована.<br>
+      <span class="small">Т-Банк подтвердил платёж, публикация активирована автоматически.</span>
+      <div class="actions" style="margin-top:10px">
+        <a href="./entry.html?no=${encodeURIComponent(qs.get("paid"))}">Открыть запись</a>
+        <a href="./create.html">Создать новую</a>
+      </div>
+    </div>`;
 }
 
 async function payEntry(no, btn){

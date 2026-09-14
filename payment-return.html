@@ -2,40 +2,72 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Проверяем оплату — Я БЫЛ ЗДЕСЬ</title>
+<title>Результат оплаты — Я БЫЛ ЗДЕСЬ</title>
 <link rel="stylesheet" href="./styles.css">
+<style>
+.pay-result{max-width:760px;margin:30px auto 70px;border:1px solid var(--line);background:rgba(23,23,27,.95);border-radius:20px;padding:28px}
+.pay-result h1{margin:0 0 12px;font-size:34px;letter-spacing:-.04em}
+.pay-result .lead{color:#c9c9d0;line-height:1.6;margin:0 0 18px}
+.pay-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+.pay-actions a{border:1px solid var(--line);background:#131317;color:white;border-radius:11px;padding:11px 14px;text-decoration:none;font-weight:700}
+.pay-actions a.primary{border:0;background:linear-gradient(135deg,var(--accent),var(--accent2))}
+.pay-note{margin-top:14px;color:var(--muted);font-size:12px;line-height:1.5}
+</style>
 </head>
 <body><div class="wrap">
-<div class="top"><a class="logo" href="./index.html">Я БЫЛ ЗДЕСЬ</a></div>
-<div class="box">
-<h1>Проверяем оплату</h1>
-<div id="status" class="notice">Подождите несколько секунд…</div>
-<div id="actions" class="actions"></div>
+<div class="top"><a class="logo" href="./index.html">Я БЫЛ ЗДЕСЬ</a><div class="nav"><a href="./my.html">Мои записи</a></div></div>
+<div class="pay-result">
+<div class="small" style="color:var(--accent2);font-weight:900;letter-spacing:.12em">Т-БАНК · РЕЗУЛЬТАТ ОПЛАТЫ</div>
+<h1 id="title">Проверяем оплату</h1>
+<p class="lead" id="lead">Подождите несколько секунд — подтверждение приходит автоматически.</p>
+<div id="status" class="notice">Проверяем статус платежа…</div>
+<div id="actions" class="pay-actions"></div>
+<div class="pay-note">Если вы уже оплатили, не закрывайте страницу сразу: банку и сайту может понадобиться несколько секунд для обмена подтверждением.</div>
 </div></div>
-<script src="./config.js"></script><script src="./api-payments.js"></script>
+<script src="./config.js"></script><script src="./api-payments.js?v=13"></script>
 <script>
 (async function(){
   const no=Number(new URLSearchParams(location.search).get("no")||0);
   const ownerKey=YBZ.getOwnerKey();
+  const title=document.getElementById("title");
+  const lead=document.getElementById("lead");
   const status=document.getElementById("status");
   const actions=document.getElementById("actions");
+
+  if(!no){
+    title.textContent="Не удалось определить запись";
+    lead.textContent="Вернитесь в «Мои записи» и проверьте статус публикации.";
+    status.className="notice error";
+    status.textContent="В адресе возврата отсутствует номер записи.";
+    actions.innerHTML=`<a class="primary" href="./my.html">Мои записи</a><a href="./create.html">Создать новую</a>`;
+    return;
+  }
 
   for(let i=0;i<15;i++){
     try{
       const rows=await YBZ.rpc("ybz_get_my_entries",{p_owner_key:ownerKey}) || [];
       const entry=rows.find(x=>Number(x.public_no)===no);
       if(entry && entry.status==="published" && entry.payment_status==="paid"){
-        status.innerHTML="<b>Оплата подтверждена.</b> Запись опубликована.";
-        setTimeout(()=>location.href=`./my.html?paid=${encodeURIComponent(no)}`,900);
+        title.textContent="Оплата прошла успешно";
+        lead.textContent=`Запись №${no.toLocaleString("ru-RU")} опубликована и доступна в общей ленте.`;
+        status.className="notice";
+        status.innerHTML="<b>Готово.</b> Т-Банк подтвердил оплату, публикация активирована автоматически.";
+        actions.innerHTML=`
+          <a class="primary" href="./entry.html?no=${encodeURIComponent(no)}">Открыть запись</a>
+          <a href="./my.html?paid=${encodeURIComponent(no)}">Мои записи</a>
+          <a href="./create.html">Создать новую</a>`;
+        setTimeout(()=>location.href=`./my.html?paid=${encodeURIComponent(no)}`,2200);
         return;
       }
     }catch(e){}
     await new Promise(r=>setTimeout(r,2000));
   }
 
+  title.textContent="Проверяем оплату";
+  lead.textContent="Платёж ещё обрабатывается или не был завершён.";
   status.className="notice";
-  status.innerHTML="Платёж ещё обрабатывается или не был завершён. Если вы оплатили, подождите немного и проверьте снова.";
-  actions.innerHTML=`<a class="btn2" href="./my.html">Перейти в «Мои записи»</a>`;
+  status.innerHTML="Если вы оплатили, подождите немного и проверьте статус в разделе «Мои записи».";
+  actions.innerHTML=`<a class="primary" href="./my.html">Перейти в «Мои записи»</a><a href="./create.html">Новая запись</a>`;
 })();
 </script>
 
