@@ -6,17 +6,17 @@
 <title>Админка — Я БЫЛ ЗДЕСЬ</title>
 <link rel="stylesheet" href="./styles.css">
 <style>
-.admin-wrap{max-width:1180px;margin:auto;padding:22px}.admin-head{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:18px 0}
-.admin-title{font-size:28px;font-weight:900;letter-spacing:-.03em}.loginbox{max-width:440px;margin:70px auto;border:1px solid var(--line);background:var(--panel);border-radius:18px;padding:22px}
-.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:18px 0 24px}.stat{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:15px}
-.stat span{display:block;color:var(--muted);font-size:12px}.stat b{display:block;font-size:25px;margin-top:5px}.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0}
-.toolbar select,.toolbar button,.toolbar input{width:auto}.toolbar input{min-width:260px}.panel{border:1px solid var(--line);background:var(--panel);border-radius:18px;padding:18px;margin:16px 0}
-.scroll{overflow:auto}table{width:100%;border-collapse:collapse;min-width:900px}th,td{padding:10px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;font-size:13px}
-th{color:#bdbdc7;font-size:12px}.tag{display:inline-block;padding:3px 7px;border:1px solid var(--line);border-radius:999px;font-size:11px}.tag.ok{border-color:#315b43;color:#76e4a6}
-.tag.demo{border-color:#5a4a3b;color:#d9a37b}.tag.pending{border-color:#705a2f;color:#e5c36e}.tag.test{border-color:#66522c;color:#e7c36d}.tag.live{border-color:#315b43;color:#76e4a6}
-.row-actions{display:flex;gap:6px;flex-wrap:wrap}.row-actions button{border:1px solid var(--line);background:#121216;color:#fff;border-radius:8px;padding:7px 8px;cursor:pointer}
-.danger{border-color:#673238!important;color:#ff9a9a!important}.muted{color:var(--muted)}.hidden{display:none!important}
-@media(max-width:760px){.stats{grid-template-columns:1fr 1fr}.admin-head{align-items:flex-start}.toolbar input{min-width:100%;width:100%}}
+.admin-wrap{max-width:1280px;margin:auto;padding:22px}.admin-head{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:18px 0}
+.admin-title{font-size:30px;font-weight:900;letter-spacing:-.03em}.admin-sub{color:var(--muted);margin-top:4px}.loginbox{max-width:440px;margin:70px auto;border:1px solid var(--line);background:var(--panel);border-radius:18px;padding:22px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:18px 0}.stat{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:15px;min-height:82px}
+.stat span{display:block;color:var(--muted);font-size:12px}.stat b{display:block;font-size:25px;margin-top:5px}.stat.revenue{border-color:#315b43;background:linear-gradient(180deg,#15211a,#17171b)}.stat.revenue b{color:#76e4a6}
+.stat.tier b{color:#ff9b69}.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0}.toolbar select,.toolbar button,.toolbar input{width:auto}.toolbar input{min-width:260px}.panel{border:1px solid var(--line);background:var(--panel);border-radius:18px;padding:18px;margin:16px 0}
+.panel-title-row{display:flex;justify-content:space-between;gap:12px;align-items:flex-end;flex-wrap:wrap}.panel-note{font-size:12px;color:var(--muted)}
+.scroll{overflow:auto}table{width:100%;border-collapse:collapse;min-width:950px}th,td{padding:10px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;font-size:13px}
+th{color:#bdbdc7;font-size:12px;position:sticky;top:0;background:var(--panel)}.tag{display:inline-block;padding:3px 7px;border:1px solid var(--line);border-radius:999px;font-size:11px;white-space:nowrap}.tag.ok{border-color:#315b43;color:#76e4a6}
+.tag.demo{border-color:#5a4a3b;color:#d9a37b}.tag.pending{border-color:#705a2f;color:#e5c36e}.tag.test{border-color:#66522c;color:#e7c36d}.tag.live{border-color:#315b43;color:#76e4a6}.tag.tbank{border-color:#d6b500;color:#f9dd22}.tag.oldpay{border-color:#5579a8;color:#9bc5ff}
+.row-actions{display:flex;gap:6px;flex-wrap:wrap}.row-actions button{border:1px solid var(--line);background:#121216;color:#fff;border-radius:8px;padding:7px 8px;cursor:pointer}.danger{border-color:#673238!important;color:#ff9a9a!important}.muted{color:var(--muted)}.hidden{display:none!important}.payment-id{max-width:240px;word-break:break-all;color:#9a9aa4;font-size:11px}.last-payment{font-size:12px;color:var(--muted);padding:8px 0 0}
+@media(max-width:900px){.stats{grid-template-columns:1fr 1fr}.admin-head{align-items:flex-start}.toolbar input{min-width:100%;width:100%}}
 </style>
 </head>
 <body>
@@ -37,22 +37,32 @@ th{color:#bdbdc7;font-size:12px}.tag{display:inline-block;padding:3px 7px;border
   </section>
 
   <main id="adminApp" class="hidden">
-    <div class="admin-title">Панель управления</div><div id="globalMsg"></div>
+    <div class="panel-title-row">
+      <div><div class="admin-title">Панель управления</div><div class="admin-sub">Боевые платежи Т-Банка, тарифы, записи и просмотры.</div></div>
+      <button id="refreshAll" class="btn2" type="button">Обновить всё</button>
+    </div>
+    <div id="globalMsg"></div>
 
     <section class="stats">
+      <div class="stat revenue"><span>БОЕВАЯ ВЫРУЧКА</span><b id="sLiveRevenue">—</b></div>
+      <div class="stat"><span>Боевых оплат</span><b id="sLivePayments">—</b></div>
+      <div class="stat"><span>Оплат через Т-Банк</span><b id="sTbankLive">—</b></div>
       <div class="stat"><span>Реальных опубликовано</span><b id="sReal">—</b></div>
-      <div class="stat"><span>Демо опубликовано</span><b id="sDemo">—</b></div>
+
+      <div class="stat tier"><span>Обычная · 50 ₽</span><b id="sBasic50">—</b></div>
+      <div class="stat tier"><span>Выделенная · 100 ₽</span><b id="sHighlight100">—</b></div>
+      <div class="stat tier"><span>VIP · 300 ₽</span><b id="sVip300">—</b></div>
+      <div class="stat"><span>Просмотров</span><b id="sViews">—</b></div>
+
       <div class="stat"><span>Ожидают оплаты</span><b id="sPending">—</b></div>
       <div class="stat"><span>Скрыто</span><b id="sHidden">—</b></div>
-      <div class="stat"><span>Просмотров</span><b id="sViews">—</b></div>
-      <div class="stat"><span>Тестовых платежей</span><b id="sTestPayments">—</b></div>
+      <div class="stat"><span>Тестовых оплат</span><b id="sTestPayments">—</b></div>
       <div class="stat"><span>Тестовая сумма</span><b id="sTestRevenue">—</b></div>
-      <div class="stat"><span>Реальных платежей</span><b id="sLivePayments">—</b></div>
-      <div class="stat"><span>РЕАЛЬНАЯ ВЫРУЧКА</span><b id="sLiveRevenue">—</b></div>
     </section>
+    <div class="last-payment">Последний успешный боевой платёж: <b id="lastLivePayment">—</b></div>
 
     <section class="panel">
-      <h2>Записи</h2>
+      <div class="panel-title-row"><h2>Записи</h2><div class="panel-note">Статус публикации и оплаты каждой записи.</div></div>
       <div class="toolbar">
         <select id="entryFilter">
           <option value="all">Все</option><option value="real">Только реальные</option><option value="demo">Только демо</option>
@@ -62,23 +72,22 @@ th{color:#bdbdc7;font-size:12px}.tag{display:inline-block;padding:3px 7px;border
         <button id="searchBtn" class="btn2" type="button">Найти</button>
         <button id="clearSearch" class="btn2" type="button">Сбросить</button>
         <button id="refreshEntries" class="btn2" type="button">Обновить</button>
-        <button id="deleteDemos" class="btn2 danger" type="button">Удалить все демо</button>
       </div>
       <div class="scroll"><table>
-        <thead><tr><th>№</th><th>Текст</th><th>Автор</th><th>Тип</th><th>Статус</th><th>Оплата</th><th>₽</th><th>Просм.</th><th>Дата</th><th>Действия</th></tr></thead>
+        <thead><tr><th>№</th><th>Текст</th><th>Автор</th><th>Тип</th><th>Статус</th><th>Оплата</th><th>Цена</th><th>Просм.</th><th>Дата</th><th>Действия</th></tr></thead>
         <tbody id="entriesBody"></tbody>
       </table></div>
     </section>
 
     <section class="panel">
-      <h2>Платежи</h2>
+      <div class="panel-title-row"><h2>Последние платежи</h2><div class="panel-note">Сначала новые. Видно Т-Банк/ЮKassa и test/live.</div></div>
       <div class="toolbar"><button id="refreshPayments" class="btn2" type="button">Обновить платежи</button></div>
       <div class="scroll"><table>
-        <thead><tr><th>Payment ID</th><th>Запись №</th><th>Сумма</th><th>Среда</th><th>Статус</th><th>Дата</th></tr></thead>
+        <thead><tr><th>Дата</th><th>Запись №</th><th>Сумма</th><th>Провайдер</th><th>Среда</th><th>Статус</th><th>Payment ID</th></tr></thead>
         <tbody id="paymentsBody"></tbody>
       </table></div>
     </section>
   </main>
 </div>
-<script src="./config.js"></script><script src="./admin.js"></script>
+<script src="./config.js"></script><script src="./admin.js?v=tbank-admin-v1"></script>
 </body></html>
