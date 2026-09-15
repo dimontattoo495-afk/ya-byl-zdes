@@ -3,6 +3,12 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Оставить след — Я БЫЛ ЗДЕСЬ</title>
+<meta property="og:type" content="website">
+<meta property="og:title" content="Я БЫЛ ЗДЕСЬ — оставь свой след">
+<meta property="og:description" content="Оставь короткую запись в общей книге интернета. Получи уникальный номер и поделись своим следом.">
+<meta property="og:image" content="https://dimontattoo495-afk.github.io/ya-byl-zdes/og-share.png">
+<meta property="og:locale" content="ru_RU">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="stylesheet" href="./styles.css">
 </head>
 <body><div class="wrap">
@@ -18,25 +24,35 @@
 </div>
 <label>Твоя запись</label>
 <textarea id="message" maxlength="500" required placeholder="Напиши что-нибудь, что хочется оставить после себя..."></textarea>
-<label>Тип записи</label>
+<label>Как будет выглядеть твой след</label>
 <select id="plan">
 <option value="basic">Обычная — 50 ₽</option>
 <option value="highlight">Выделенная — 100 ₽</option>
 <option value="vip">VIP — 300 ₽</option>
 </select>
+<div id="planInfo" class="plan-info"></div>
 <div class="pricebox"><span>К оплате</span><strong id="price">50 ₽</strong></div>
 <button class="submit" id="submitBtn" type="submit">ПЕРЕЙТИ К ОПЛАТЕ</button>
 </form>
 </div></div>
 
-<script src="./config.js"></script><script src="./api-payments.js?v=13"></script>
+<script src="./config.js"></script><script src="./api-payments.js?v=14"></script>
 <script>
 const prices={basic:50,highlight:100,vip:300};
+const planInfo={
+  basic:'Обычная запись · стандартное оформление в общей ленте.',
+  highlight:'Выделенная · заметная рамка и более выразительное оформление.',
+  vip:'VIP · специальное оформление и приоритет среди записей.'
+};
 const plan=document.getElementById("plan");
 const price=document.getElementById("price");
 const box=document.getElementById("messageBox");
-plan.addEventListener("change",()=>price.textContent=prices[plan.value]+" ₽");
-price.textContent=prices[plan.value]+" ₽";
+function updatePlan(){
+  price.textContent=prices[plan.value]+" ₽";
+  document.getElementById("planInfo").textContent=planInfo[plan.value]||'';
+}
+plan.addEventListener("change",updatePlan);
+updatePlan();
 
 document.getElementById("form").addEventListener("submit",async(e)=>{
   e.preventDefault();

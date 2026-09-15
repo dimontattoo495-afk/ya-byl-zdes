@@ -3,6 +3,12 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Мои записи — Я БЫЛ ЗДЕСЬ</title>
+<meta property="og:type" content="website">
+<meta property="og:title" content="Я БЫЛ ЗДЕСЬ — оставь свой след">
+<meta property="og:description" content="Оставь короткую запись в общей книге интернета. Получи уникальный номер и поделись своим следом.">
+<meta property="og:image" content="https://dimontattoo495-afk.github.io/ya-byl-zdes/og-share.png">
+<meta property="og:locale" content="ru_RU">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="stylesheet" href="./styles.css">
 </head>
 <body><div class="wrap">
@@ -19,7 +25,9 @@
 </div></div>
 
 <script src="./config.js"></script>
-<script src="./api-payments.js?v=13"></script>
+<script src="./api-payments.js?v=14"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<script src="./share.js?v=14"></script>
 <script>
 const ownerKey=YBZ.getOwnerKey();
 let currentEntries=[];
@@ -43,7 +51,7 @@ if(qs.get("paid")){
       <b>Оплата прошла успешно.</b> Запись №${paidNo} опубликована.<br>
       <span class="small">Т-Банк подтвердил платёж, публикация активирована автоматически.</span>
       <div class="actions" style="margin-top:10px">
-        <a href="./entry.html?no=${encodeURIComponent(qs.get("paid"))}">Открыть запись</a>
+        <a href="./entry.html#${encodeURIComponent(qs.get("paid"))}">Открыть запись</a>
         <a href="./create.html">Создать новую</a>
       </div>
     </div>`;
@@ -91,10 +99,12 @@ async function load(){
           </div>
           <div class="actions">
             ${pending ? `<button type="button" data-action="pay" data-no="${e.public_no}">ОПЛАТИТЬ ${YBZ.esc(e.price_rub)} ₽</button>` :
-              `<a href="./entry.html?no=${encodeURIComponent(e.public_no)}">Открыть</a>`}
+              `<a href="./entry.html#${encodeURIComponent(e.public_no)}">Открыть</a>
+               <button type="button" data-action="sharetools" data-no="${e.public_no}">Поделиться / QR</button>`}
             <button type="button" data-action="edit" data-no="${e.public_no}">Изменить</button>
             ${!pending ? `<button type="button" data-action="toggle" data-no="${e.public_no}">${e.status==="hidden"?"Опубликовать":"Скрыть"}</button>` : ""}
           </div>
+          <div data-inline-share hidden></div>
         </article>`;
       }).join("");
     }
@@ -114,6 +124,21 @@ document.getElementById("list").addEventListener("click",async(event)=>{
 
   if(action==="pay"){
     await payEntry(no,btn);
+    return;
+  }
+
+  if(action==="sharetools"){
+    const entry=currentEntries.find(x=>Number(x.public_no)===no);
+    const host=btn.closest('.card')?.querySelector('[data-inline-share]');
+    if(host){
+      if(!host.dataset.ready){
+        YBZShare.renderShareBox(host,no,entry?.message||'',{compact:true});
+        host.dataset.ready='1';
+        host.hidden=false;
+      }else{
+        host.hidden=!host.hidden;
+      }
+    }
     return;
   }
 

@@ -3,34 +3,54 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Запись — Я БЫЛ ЗДЕСЬ</title>
+<meta name="description" content="Публичная запись проекта «Я БЫЛ ЗДЕСЬ». Оставь свой след и поделись им.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Я БЫЛ ЗДЕСЬ — оставь свой след">
+<meta property="og:description" content="Оставь короткую запись в общей книге интернета. Получи уникальный номер и поделись своим следом.">
+<meta property="og:image" content="https://dimontattoo495-afk.github.io/ya-byl-zdes/og-share.png">
+<meta property="og:locale" content="ru_RU">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="stylesheet" href="./styles.css">
 </head>
 <body><div class="wrap">
-<div class="top"><a class="logo" href="./index.html">Я БЫЛ ЗДЕСЬ</a><div class="nav"><a href="./create.html">Оставить свой след</a></div></div>
-<div class="box">
+<div class="top"><a class="logo" href="./index.html">Я БЫЛ ЗДЕСЬ</a><div class="nav"><a href="./create.html">Оставить свой след</a><a href="./my.html">Мои записи</a></div></div>
+<div class="box public-entry-box">
 <div id="status" class="loading">Загрузка…</div>
 <div id="entry"></div>
+<div id="shareBox"></div>
 </div></div>
 <script src="./config.js"></script><script src="./api.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<script src="./share.js?v=14"></script>
 <script>
 (async function(){
-  const no=Number(new URLSearchParams(location.search).get("no")||0);
-  const status=document.getElementById("status");
+  const qs=new URLSearchParams(location.search);
+  const hashNo=String(location.hash||'').replace(/^#/,'').trim();
+  const queryNo=qs.get('no');
+  const no=Number(hashNo||queryNo||0);
+  const status=document.getElementById('status');
+
+  if(no && queryNo && !hashNo){
+    history.replaceState(null,'',`./entry.html#${encodeURIComponent(no)}`);
+  }
+
   try{
-    const rows=await YBZ.rpc("ybz_get_entry",{p_public_no:no});
+    if(!no) throw new Error('Не указан номер записи.');
+    const rows=await YBZ.rpc('ybz_get_entry',{p_public_no:no});
     const e=Array.isArray(rows)?rows[0]:rows;
-    if(!e) throw new Error("Запись не найдена или скрыта.");
+    if(!e) throw new Error('Запись не найдена или скрыта.');
     document.title=`Запись №${e.public_no} — Я БЫЛ ЗДЕСЬ`;
-    document.getElementById("entry").innerHTML=`
-      <article class="card ${YBZ.esc(e.plan)}">
+    document.getElementById('entry').innerHTML=`
+      <article class="card ${YBZ.esc(e.plan)} public-entry-card">
         <div class="num">ЗАПИСЬ №${YBZ.fmt(e.public_no)}</div>
-        <div class="msg" style="font-size:24px">${YBZ.esc(e.message)}</div>
-        <div class="meta">${YBZ.esc(e.name || "Без имени")}${e.city ? " · "+YBZ.esc(e.city):""}${e.is_demo ? " · пример" : ""} · просмотры: ${YBZ.fmt(e.views)}</div>
+        <div class="msg public-entry-message">${YBZ.esc(e.message)}</div>
+        <div class="meta">${YBZ.esc(e.name || 'Без имени')}${e.city ? ' · '+YBZ.esc(e.city):''}${e.is_demo ? ' · пример' : ''} · просмотры: ${YBZ.fmt(e.views)}</div>
       </article>
-      <p><a class="cta" href="./create.html">ОСТАВИТЬ СВОЮ ЗАПИСЬ</a></p>`;
-    status.style.display="none";
+      <div class="entry-cta-row"><a class="cta" href="./create.html">ОСТАВИТЬ СВОЮ ЗАПИСЬ</a></div>`;
+    YBZShare.renderShareBox(document.getElementById('shareBox'),e.public_no,e.message);
+    status.style.display='none';
   }catch(err){
-    status.className="notice error"; status.textContent=err.message;
+    status.className='notice error'; status.textContent=err.message;
   }
 })();
 </script>
@@ -43,5 +63,4 @@
 <a href="./contacts.html" style="color:#aaaab4;text-decoration:none">Контакты и реквизиты</a><br>
 © 2026 «Я БЫЛ ЗДЕСЬ» · ИП Акишин Дмитрий Анатольевич
 </div>
-
 </body></html>

@@ -3,6 +3,12 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Результат оплаты — Я БЫЛ ЗДЕСЬ</title>
+<meta property="og:type" content="website">
+<meta property="og:title" content="Я БЫЛ ЗДЕСЬ — оставь свой след">
+<meta property="og:description" content="Оставь короткую запись в общей книге интернета. Получи уникальный номер и поделись своим следом.">
+<meta property="og:image" content="https://dimontattoo495-afk.github.io/ya-byl-zdes/og-share.png">
+<meta property="og:locale" content="ru_RU">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="stylesheet" href="./styles.css">
 <style>
 .pay-result{max-width:760px;margin:30px auto 70px;border:1px solid var(--line);background:rgba(23,23,27,.95);border-radius:20px;padding:28px}
@@ -22,9 +28,12 @@
 <p class="lead" id="lead">Подождите несколько секунд — подтверждение приходит автоматически.</p>
 <div id="status" class="notice">Проверяем статус платежа…</div>
 <div id="actions" class="pay-actions"></div>
+<div id="shareAfterPay"></div>
 <div class="pay-note">Если вы уже оплатили, не закрывайте страницу сразу: банку и сайту может понадобиться несколько секунд для обмена подтверждением.</div>
 </div></div>
-<script src="./config.js"></script><script src="./api-payments.js?v=13"></script>
+<script src="./config.js"></script><script src="./api-payments.js?v=14"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<script src="./share.js?v=14"></script>
 <script>
 (async function(){
   const no=Number(new URLSearchParams(location.search).get("no")||0);
@@ -53,10 +62,10 @@
         status.className="notice";
         status.innerHTML="<b>Готово.</b> Т-Банк подтвердил оплату, публикация активирована автоматически.";
         actions.innerHTML=`
-          <a class="primary" href="./entry.html?no=${encodeURIComponent(no)}">Открыть запись</a>
+          <a class="primary" href="./entry.html#${encodeURIComponent(no)}">Открыть запись</a>
           <a href="./my.html?paid=${encodeURIComponent(no)}">Мои записи</a>
           <a href="./create.html">Создать новую</a>`;
-        setTimeout(()=>location.href=`./my.html?paid=${encodeURIComponent(no)}`,2200);
+        YBZShare.renderShareBox(document.getElementById('shareAfterPay'),entry.public_no,entry.message||'',{compact:true});
         return;
       }
     }catch(e){}

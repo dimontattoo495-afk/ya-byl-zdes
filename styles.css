@@ -53,3 +53,36 @@ footer{text-align:center;color:#6f6f79;font-size:12px;padding:20px 0 38px}
   .feed,.grid{grid-template-columns:1fr}
   .top{align-items:flex-start}
 }
+
+
+/* YBZ V1.4 VIRAL */
+.hero-actions{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;align-items:center;margin-top:20px}
+.hero-actions .cta{margin-top:0}
+.hero-share{color:#fff;cursor:pointer;font-weight:850;padding:14px 18px}
+.viral-intro{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:18px 0 34px}
+.viral-intro-card{border:1px solid var(--line);background:rgba(23,23,27,.88);border-radius:16px;padding:17px;display:flex;flex-direction:column;gap:7px}
+.viral-intro-card span{color:var(--accent2);font-weight:1000;font-size:12px;letter-spacing:.12em}
+.viral-intro-card b{font-size:18px}
+.viral-intro-card small{color:var(--muted);line-height:1.45}
+.plan-info{margin-top:9px;padding:11px 12px;border:1px solid #303039;border-radius:11px;background:#101013;color:#bdbdc7;font-size:13px;line-height:1.45}
+.public-entry-box{max-width:820px}
+.public-entry-card{min-height:220px}
+.public-entry-message{font-size:clamp(23px,5vw,34px);line-height:1.35}
+.entry-cta-row{text-align:center}
+.share-card{margin-top:18px;border:1px solid #34343e;background:linear-gradient(180deg,#15151a,#101013);border-radius:18px;padding:17px}
+.share-card.compact{margin-top:16px}
+.share-head{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.share-head b{font-size:18px}
+.share-eyebrow{font-size:10px;letter-spacing:.14em;color:var(--accent2);font-weight:1000;margin-bottom:4px}
+.share-no{border:1px solid #3a3a44;border-radius:999px;padding:5px 9px;color:#bdbdc7;font-size:12px}
+.share-buttons{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.share-buttons button,.qr-download{border:1px solid #363641;background:#1a1a20;color:white;border-radius:10px;padding:9px 11px;cursor:pointer;font-weight:750}
+.share-buttons button:first-child{border:0;background:linear-gradient(135deg,var(--accent),var(--accent2))}
+.share-link{margin-top:11px;padding:10px 11px;border:1px solid #2d2d36;background:#0e0e11;border-radius:10px;color:#aaaab5;font-size:12px;word-break:break-all}
+.share-feedback{min-height:18px;margin-top:8px;color:var(--ok);font-size:12px}
+.qr-wrap{margin-top:14px;padding:14px;border-radius:14px;background:#fff;color:#17171b;text-align:center}
+.qr-box{display:flex;justify-content:center;min-height:190px;margin-bottom:10px}
+.qr-box img,.qr-box canvas{border-radius:8px}
+.qr-wrap .small{color:#555;max-width:430px;margin:0 auto 10px}
+.qr-download{background:#151519}
+@media(max-width:760px){.viral-intro{grid-template-columns:1fr}.share-head{align-items:flex-start}.share-buttons button{flex:1 1 calc(50% - 8px)}}

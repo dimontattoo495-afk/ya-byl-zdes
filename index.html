@@ -3,7 +3,13 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Я БЫЛ ЗДЕСЬ</title>
-<meta name="description" content="Оставь одну запись в общей книге интернета.">
+<meta name="description" content="Оставь короткую запись в общей книге интернета. Получи уникальный номер и поделись своим следом.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Я БЫЛ ЗДЕСЬ — оставь свой след">
+<meta property="og:description" content="Оставь короткую запись в общей книге интернета. Получи уникальный номер и поделись своим следом.">
+<meta property="og:image" content="https://dimontattoo495-afk.github.io/ya-byl-zdes/og-share.png">
+<meta property="og:locale" content="ru_RU">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
@@ -19,7 +25,7 @@
   <section class="hero">
     <div style="font-size:12px;letter-spacing:.16em;color:#92929e">ОДНА ЗАПИСЬ · ОДИН НОМЕР · ОДИН СЛЕД</div>
     <h1>Я БЫЛ ЗДЕСЬ</h1>
-    <p>Оставь короткую запись в общей книге интернета. Получи уникальный номер и секретную ссылку для управления своими записями.</p>
+    <p><b>Оставь свой след.</b> Мысль, воспоминание, признание или просто фразу, которую хочется сохранить. У каждой записи будет свой уникальный номер и публичная ссылка.</p>
     <div class="counter">
       <div class="counter-row">
         <span>РЕАЛЬНЫХ ЗАПИСЕЙ: <span id="occupied">—</span></span>
@@ -27,7 +33,16 @@
       </div>
       <div class="bar"><i id="progress" style="width:1%"></i></div>
     </div>
-    <a class="cta" href="./create.html">ОСТАВИТЬ СЛЕД</a>
+    <div class="hero-actions">
+      <a class="cta" href="./create.html">ОСТАВИТЬ СЛЕД</a>
+      <button class="btn2 hero-share" id="shareProject" type="button">ПОДЕЛИТЬСЯ ПРОЕКТОМ</button>
+    </div>
+  </section>
+
+  <section class="viral-intro">
+    <div class="viral-intro-card"><span>01</span><b>Напиши</b><small>Оставь короткую запись без регистрации.</small></div>
+    <div class="viral-intro-card"><span>02</span><b>Получи номер</b><small>У записи появится свой постоянный публичный номер.</small></div>
+    <div class="viral-intro-card"><span>03</span><b>Поделись</b><small>Telegram, VK, WhatsApp, ссылка или QR-код.</small></div>
   </section>
 
   <h2>Последние записи</h2>
@@ -42,11 +57,16 @@
 
 <script src="./config.js"></script>
 <script src="./api.js"></script>
+<script src="./share.js?v=14"></script>
 <script>
 (async function(){
   const status = document.getElementById("status");
   const feed = document.getElementById("feed");
   const showMore = document.getElementById("showMore");
+  document.getElementById("shareProject")?.addEventListener("click", async()=>{
+    const r=await YBZShare.shareProject();
+    if(r==='copied') alert('Ссылка на проект скопирована.');
+  });
 
   let visibleCount = 8;
   let cachedRows = [];
@@ -66,7 +86,7 @@
         : `<span style="display:inline-block;margin-left:8px;padding:3px 7px;border:1px solid #315b43;border-radius:999px;font-size:10px;color:#76e4a6;vertical-align:1px">РЕАЛЬНАЯ ЗАПИСЬ</span>`;
 
       return `
-        <article class="card ${YBZ.esc(e.plan)}" onclick="location.href='./entry.html?no=${encodeURIComponent(e.public_no)}'" style="cursor:pointer">
+        <article class="card ${YBZ.esc(e.plan)}" onclick="location.href='./entry.html#${encodeURIComponent(e.public_no)}'" style="cursor:pointer">
           <div class="num">ЗАПИСЬ №${YBZ.fmt(e.public_no)} ${badge}</div>
           <div class="msg">${YBZ.esc(e.message)}</div>
           <div class="meta">${YBZ.esc(e.name || "Без имени")}${e.city ? " · "+YBZ.esc(e.city) : ""}${e.is_demo ? " · пример" : ""}</div>
