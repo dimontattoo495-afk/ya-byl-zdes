@@ -32,6 +32,15 @@ jobs:
           node zags/browser-smoke.cjs
           node zags/browser-otp.cjs
           node zags/browser-partner.cjs
+          node zags/browser-mobile.cjs
+      - name: Upload mobile screenshots
+        uses: actions/upload-artifact@v4
+        with:
+          name: zags-mobile-screenshots
+          path: |
+            /tmp/zags-mobile-landing.png
+            /tmp/zags-mobile-form.png
+          retention-days: 7
       - name: Package preview files
         run: zip -r zags-staging-preview.zip zags/index.html zags/README.md config.js
       - name: Upload staging preview artifact
