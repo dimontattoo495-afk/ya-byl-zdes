@@ -18,3 +18,11 @@ jobs:
           node-version: '22'
       - name: Verify staged ZAGS files
         run: node zags/preflight.cjs
+      - name: Package preview files
+        run: zip -r zags-staging-preview.zip zags/index.html zags/README.md config.js
+      - name: Upload staging preview artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: zags-staging-preview
+          path: zags-staging-preview.zip
+          retention-days: 7
