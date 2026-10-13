@@ -8,6 +8,7 @@ on:
   workflow_dispatch:
 jobs:
   preflight:
+    timeout-minutes: 9
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -29,11 +30,11 @@ jobs:
       - name: Test demo in Chromium
         run: |
           python3 -m http.server 8765 --bind 127.0.0.1 >/tmp/zags-http.log 2>&1 &
-          node zags/browser-smoke.cjs
-          node zags/browser-otp.cjs
-          node zags/browser-recovery.cjs
-          node zags/browser-partner.cjs
-          node zags/browser-mobile.cjs
+          timeout 50s node zags/browser-smoke.cjs
+          timeout 50s node zags/browser-otp.cjs
+          timeout 50s node zags/browser-recovery.cjs
+          timeout 50s node zags/browser-partner.cjs
+          timeout 50s node zags/browser-mobile.cjs
       - name: Upload mobile screenshots
         uses: actions/upload-artifact@v4
         with:
