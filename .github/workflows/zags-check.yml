@@ -30,6 +30,7 @@ jobs:
         run: |
           python3 -m http.server 8765 --bind 127.0.0.1 >/tmp/zags-http.log 2>&1 &
           node zags/browser-smoke.cjs
+          node zags/browser-otp.cjs
       - name: Package preview files
         run: zip -r zags-staging-preview.zip zags/index.html zags/README.md config.js
       - name: Upload staging preview artifact
