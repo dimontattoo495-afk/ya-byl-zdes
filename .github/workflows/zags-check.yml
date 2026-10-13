@@ -31,6 +31,7 @@ jobs:
           python3 -m http.server 8765 --bind 127.0.0.1 >/tmp/zags-http.log 2>&1 &
           node zags/browser-smoke.cjs
           node zags/browser-otp.cjs
+          node zags/browser-recovery.cjs
           node zags/browser-partner.cjs
           node zags/browser-mobile.cjs
       - name: Upload mobile screenshots
