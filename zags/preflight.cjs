@@ -2,7 +2,11 @@ const fs = require('fs');
 const assert = require('assert');
 const html = fs.readFileSync('zags/index.html','utf8');
 const config = fs.readFileSync('config.js','utf8');
+const signupTemplate = fs.readFileSync('zags/templates/confirm-signup.html','utf8');
+const loginTemplate = fs.readFileSync('zags/templates/magic-link-otp.html','utf8');
 const checks = [
+ ['Signup email includes OTP token', signupTemplate.includes('{{ .Token }}') && !signupTemplate.includes('{{ .ConfirmationURL }}')],
+ ['Login email includes OTP token', loginTemplate.includes('{{ .Token }}') && !loginTemplate.includes('{{ .ConfirmationURL }}')],
  ['HTML language', /<html lang="ru">/.test(html)],
  ['Supabase SDK', html.includes('@supabase/supabase-js@2')],
  ['Shared config', html.includes('src="../config.js"')],
