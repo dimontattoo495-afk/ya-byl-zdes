@@ -6,7 +6,7 @@ const vm = require('node:vm');
   vm.runInNewContext(fs.readFileSync('config.js','utf8'), context);
   const {SUPABASE_URL, SUPABASE_ANON_KEY} = context.window.YBZ_CONFIG;
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) throw Error('Public Supabase settings missing');
-  const health = await fetch(SUPABASE_URL + '/auth/v1/health', {signal:AbortSignal.timeout(12000)});
+  const health = await fetch(SUPABASE_URL + '/auth/v1/health', {headers:{apikey:SUPABASE_ANON_KEY},signal:AbortSignal.timeout(12000)});
   if (!health.ok) throw Error('Auth health not OK: '+health.status);
   console.log('PASS: Supabase Auth reachable');
 
