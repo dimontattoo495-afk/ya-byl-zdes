@@ -23,6 +23,8 @@ jobs:
         run: |
           node -e 'const fs=require("fs");const s=fs.readFileSync("zags/index.html","utf8");const a=s.indexOf("<script type=\"module\">");const b=s.lastIndexOf("</script>");if(a<0||b<a)process.exit(1);fs.writeFileSync("/tmp/zags-module.mjs",s.slice(a+22,b))'
           node --check /tmp/zags-module.mjs
+      - name: Read-only Supabase connectivity and access probe
+        run: node zags/backend-probe.cjs
       - name: Install browser test dependency
         run: |
           npm install --no-save playwright
