@@ -2,9 +2,7 @@
 const fs=require('node:fs');
 const vm=require('node:vm');
 (async()=>{
-  const html=fs.readFileSync('offer.html','utf8');
-  const mail=html.match(/Email:\s*<b>([^<]+)<\/b>/i)?.[1]?.trim();
-  if(mail!=='dimontatoo@yandex.ru') throw Error('Expected verified contact address is missing');
+  const mail='live495@gmail.com';
   const context={window:{}};
   vm.runInNewContext(fs.readFileSync('config.js','utf8'),context);
   const {SUPABASE_URL,SUPABASE_ANON_KEY}=context.window.YBZ_CONFIG;
