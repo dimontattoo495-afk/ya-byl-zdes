@@ -12,7 +12,7 @@ const checks = [
  ['Shared config', html.includes('src="../config.js"')],
  ['OTP sending', html.includes('signInWithOtp({email')],
  ['OTP verification', html.includes('verifyOtp({email')],
- ['Six digit OTP', html.includes('pattern="[0-9]{6}"')],
+ ['Six/eight digit OTP', html.includes('pattern="[0-9]{6,8}"') && html.includes('maxlength="8"')],
  ['Backend RPC', html.includes("sb.rpc('zags_action'")],
  ['Payment disabled', html.includes('paymentsEnabled:false')],
  ['Invitation requires login', html.includes('needAuth(showInvite)')],
