@@ -27,6 +27,8 @@ await page.locator('#partner-name').fill('Анна');
 await page.locator('#accept input[type=checkbox]').check();
 await page.locator('#accept').evaluate(el=>el.requestSubmit());
 await page.getByText('Оплата временно отключена.').waitFor();
+await page.getByText('Партнёр согласился. Заявление успешно создано').waitFor();
+assert.equal(await page.getByText('Оплатить церемонию может любой из вас').count(),0,'Do not invite payment while disabled');
 assert.equal(await page.locator('#pay').count(),0,'Payment button must be absent');
 assert.deepEqual(await page.evaluate(()=>window.__calls),['invitation','accept']);
 assert.deepEqual(errors,[]);
