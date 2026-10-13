@@ -22,6 +22,14 @@ jobs:
         run: |
           node -e 'const fs=require("fs");const s=fs.readFileSync("zags/index.html","utf8");const a=s.indexOf("<script type=\"module\">");const b=s.lastIndexOf("</script>");if(a<0||b<a)process.exit(1);fs.writeFileSync("/tmp/zags-module.mjs",s.slice(a+22,b))'
           node --check /tmp/zags-module.mjs
+      - name: Install browser test dependency
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Test demo in Chromium
+        run: |
+          python3 -m http.server 8765 --bind 127.0.0.1 >/tmp/zags-http.log 2>&1 &
+          node zags/browser-smoke.cjs
       - name: Package preview files
         run: zip -r zags-staging-preview.zip zags/index.html zags/README.md config.js
       - name: Upload staging preview artifact
