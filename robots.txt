@@ -2,4 +2,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://dimontattoo495-afk.github.io/ya-byl-zdes/sitemap.xml
+Sitemap: https://yabylzdes.ru/sitemap.xml
