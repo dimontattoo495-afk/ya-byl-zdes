@@ -35,3 +35,26 @@ jobs:
           }
           (async()=>{const checks=await Promise.all(names.map(check));for(const d of checks)console.log('DOMAIN_CHECK '+JSON.stringify(d));})().catch(e=>{console.error(e);process.exit(1)});
           JS
+
+      - name: Query official RU registry WHOIS over port 43
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import socket
+          names = ['blizhe18.ru','bylzdes.ru','yabylzdes.ru','yabilzdes.ru','ya-byl-zdes.ru','byl-zdes.ru']
+          for name in names:
+              try:
+                  with socket.create_connection(('whois.tcinet.ru',43),timeout=5) as sock:
+                      sock.settimeout(5)
+                      sock.sendall((name+'\\r\\n').encode())
+                      data=b''
+                      while len(data)<16000:
+                          chunk=sock.recv(4096)
+                          if not chunk:break
+                          data+=chunk
+                      lines=data.decode(errors='replace').splitlines()
+                      status=[line for line in lines if line.lower().startswith(('domain:','state:','no entries','% no entries'))]
+                      print('WHOIS_RESULT',name,' | '.join(status[:6]) if status else 'NO_CONCLUSIVE_STATUS', 'len='+str(len(data)))
+              except Exception as e:
+                  print('WHOIS_RESULT',name,'CONNECTION_ERROR',str(e)[:95])
+          PY
