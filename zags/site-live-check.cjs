@@ -5,7 +5,7 @@ const assert=require('node:assert/strict');
 const url='https://shiny-piroshki-431ada.netlify.app/';
 (async()=>{
   const response=await fetch(url,{signal:AbortSignal.timeout(14000),redirect:'follow'});
-  assert.equal(response.status,200,'Netlify home should serve HTTP 200');
+  if(response.status!==200)throw Error('Netlify HTTP status '+response.status+' at '+response.url);
   assert.match(response.headers.get('content-type')||'',/text\/html/i,'Netlify must serve HTML');
   const html=await response.text();
   assert.match(html,/<html lang="ru">/,'Expected Russian site');
