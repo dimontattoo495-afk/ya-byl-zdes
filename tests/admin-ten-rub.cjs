@@ -30,12 +30,12 @@ const base='http://127.0.0.1:8765/';
       if(url.includes('/functions/v1/create-payment')){
         const body=JSON.parse(req.postData()||'{}');
         assert.equal(body.admin_test,true);
-        assert.equal(body.public_no,987654321);
+        assert.equal(body.public_no,undefined,'Edge resolves the existing order by owner key');
         assert.match(body.owner_key,/^[0-9a-f]{64}$/i);
         assert.equal(req.headers().authorization,'Bearer OFFLINE_ONLY_FAKE_ADMIN_TOKEN');
         bankCalls++;
         return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({
-          ok:true,confirmation_url:'https://fake-payment.example.invalid/test-checkout'
+          ok:true,public_no:987654321,confirmation_url:'https://fake-payment.example.invalid/test-checkout'
         })});
       }
       if(url.includes('fake-payment.example.invalid')){
