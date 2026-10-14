@@ -1,0 +1,58 @@
+name: Enforce HTTPS for verified YBZ custom domain
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/enable-domain-https.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+jobs:
+  enforce:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Verify valid live HTTPS then enable HTTPS-only redirects
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          node - <<'JS'
+          const repo='dimontattoo495-afk/ya-byl-zdes';
+          const pagesApi='https://api.github.com/repos/'+repo+'/pages';
+          const headers={
+            'Accept':'application/vnd.github+json',
+            'Authorization':'Bearer '+process.env.GH_TOKEN,
+            'X-GitHub-Api-Version':'2022-11-28'
+          };
+          async function get(url) {
+            const r=await fetch(url,{headers,signal:AbortSignal.timeout(15000)});
+            if(!r.ok)throw new Error(url+': HTTP '+r.status);
+            return r.json();
+          }
+          (async()=>{
+            const page=await get(pagesApi);
+            console.log('BEFORE '+JSON.stringify({cname:page.cname,https_enforced:page.https_enforced}));
+            if(page.cname!=='yabylzdes.ru')throw Error('Wrong GitHub Pages domain: stop');
+            const targets=['https://yabylzdes.ru/','https://www.yabylzdes.ru/','https://yabylzdes.ru/zags/'];
+            for(const url of targets){
+              const res=await fetch(url,{redirect:'follow',signal:AbortSignal.timeout(15000)});
+              if(!res.ok || !res.url.startsWith('https://yabylzdes.ru/'))
+                throw Error('HTTPS certificate or redirect not ready: '+url);
+              console.log('CERTIFICATE_OK '+JSON.stringify({url,status:res.status,finalUrl:res.url}));
+            }
+            if(page.https_enforced===true){console.log('HTTPS_ALREADY_ENFORCED');return;}
+            const update=await fetch(pagesApi,{
+              method:'PUT',
+              headers:{...headers,'Content-Type':'application/json'},
+              body:JSON.stringify({https_enforced:true}),
+              signal:AbortSignal.timeout(15000)
+            });
+            const body=await update.text();
+            console.log('ENABLE_HTTPS_HTTP '+update.status);
+            if(!update.ok)throw Error('Cannot enable HTTPS through GitHub Pages API: '+update.status+' '+body.slice(0,500));
+            const after=await get(pagesApi);
+            console.log('AFTER '+JSON.stringify({cname:after.cname,https_enforced:after.https_enforced}));
+            if(after.https_enforced!==true)throw Error('Enforce HTTPS not set yet');
+          })().catch(e=>{console.error('FAILED '+e.message);process.exitCode=1});
+          JS
