@@ -4,6 +4,8 @@ on:
     paths:
       - 'zags/index.html'
       - 'zags/pdf-static-check.cjs'
+      - 'zags/vintage-certificate.svg'
+      - 'zags/vintage-static-check.cjs'
       - '.github/workflows/zags-pdf-check.yml'
   workflow_dispatch:
 jobs:
@@ -17,4 +19,6 @@ jobs:
         with:
           node-version: '22'
       - run: node zags/pdf-static-check.cjs
+      - run: node zags/vintage-static-check.cjs
+      - run: node --check /tmp/zags-vintage-module.mjs
       - run: node --check /tmp/zags-review-module.mjs
