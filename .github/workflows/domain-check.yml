@@ -59,6 +59,8 @@ jobs:
           })().catch(e=>{console.error('CHECK_ERROR '+e.message);process.exitCode=1});
           JS
 
+      - name: Refresh new-domain status after verification
+        run: echo 'Checking registry, public DNS and HTTPS without changing production CNAME'
       - name: Check RU registry delegation and public resolvers
         run: |
           python3 - <<'PY'
