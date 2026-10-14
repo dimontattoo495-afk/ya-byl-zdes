@@ -32,6 +32,8 @@ jobs:
           test -f netlify.toml
           grep -F 'node zags/site-build.cjs' netlify.toml
           grep -F 'publish = "dist/zags-preview"' netlify.toml
+      - name: Check short RU domain candidates (read only)
+        run: node zags/domain-candidates-check.cjs
       - name: Install browser test dependency
         run: |
           npm install --no-save playwright
