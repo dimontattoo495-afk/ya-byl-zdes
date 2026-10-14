@@ -4,6 +4,7 @@ on:
     branches: [main]
     paths:
       - 'zags/**'
+      - 'index.html'
       - '.github/workflows/zags-public-check.yml'
   workflow_dispatch:
 jobs:
@@ -32,7 +33,15 @@ jobs:
               if(r.ok){
                 const html=await r.text();
                 if(!html.includes('paymentsEnabled:false')||!html.includes('ТЕСТОВАЯ ВЕРСИЯ'))throw Error('Wrong page or payments unsafe');
-                console.log('PASS: live GitHub Pages ZAGS and disabled payment UI');
+                const home=await fetch('https://dimontattoo495-afk.github.io/ya-byl-zdes/',{signal:AbortSignal.timeout(12000)});
+                if(!home.ok)throw Error('Main site homepage HTTP '+home.status);
+                const front=await home.text();
+                if(!front.includes('href="./zags/"')||!front.includes('id="zags-title"'))throw Error('Main site missing new ZAGS navigation');
+                const policy=await fetch('https://dimontattoo495-afk.github.io/ya-byl-zdes/zags/privacy.html',{signal:AbortSignal.timeout(12000)});
+                if(!policy.ok)throw Error('ZAGS-specific privacy page HTTP '+policy.status);
+                const policyHtml=await policy.text();
+                if(!policyHtml.includes('Данные в тестовом'))throw Error('Incorrect ZAGS privacy notice');
+                console.log('PASS: live homepage link, virtual ZAGS HTTPS and privacy notice, payments disabled');
                 return;
               }
               if(i<3)await new Promise(resolve=>setTimeout(resolve,12000));
