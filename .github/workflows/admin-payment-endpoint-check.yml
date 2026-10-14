@@ -1,0 +1,33 @@
+name: Check protected 10 RUB payment endpoint without bank calls
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/admin-payment-endpoint-check.yml'
+  workflow_dispatch:
+jobs:
+  safe-preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    permissions:
+      contents: read
+    steps:
+      - name: Verify anonymous 10 RUB requests are rejected before payment creation
+        run: |
+          node - <<'JS'
+          (async()=>{
+            const url='https://qgccfpkvzrimwqmqrxwq.supabase.co/functions/v1/create-payment';
+            const r=await fetch(url,{
+              method:'POST',
+              headers:{'Content-Type':'application/json'},
+              body:JSON.stringify({admin_test:true,owner_key:'00'.repeat(32)}),
+              signal:AbortSignal.timeout(15000)
+            });
+            const data=await r.json().catch(()=>({}));
+            console.log('ADMIN_PAYMENT_AUTH_CHECK '+JSON.stringify({http:r.status,error:data.error||null}));
+            // This request has no user identity; it must NOT create any order or contact the bank.
+            if(r.status!==401 || !String(data.error||'').includes('администратора'))
+              throw Error('Unexpected admin-checkout authorization behavior');
+            console.log('PASS: protected payment endpoint is online; rejected anonymous request before bank call');
+          })().catch(e=>{console.error(e.message);process.exitCode=1});
+          JS
