@@ -13,7 +13,6 @@ let html=source
  .replace('<script src="../config.js">','<script>'+config+'</script>')
  .replaceAll('../index.html',origin)
  .replaceAll('../contacts.html',origin+'contacts.html')
- .replaceAll('../privacy.html',origin+'privacy.html')
  .replace('<head>','<head><meta name="robots" content="noindex,nofollow,noarchive">')
  .replace('<title>Виртуальный ЗАГС · Я был здесь</title>','<title>ТЕСТ · Виртуальный ЗАГС · Я был здесь</title>')
  .replace('<body>','<body><div style="position:sticky;top:0;z-index:9999;background:#fce8cc;color:#533c20;padding:10px;text-align:center;font:600 14px Arial,sans-serif">ТЕСТОВАЯ ВЕРСИЯ · ПЛАТЕЖИ ОТКЛЮЧЕНЫ · НЕ ГОСУДАРСТВЕННАЯ УСЛУГА</div>');
@@ -22,5 +21,6 @@ assert(!html.includes('href="../'));
 assert(html.includes('paymentsEnabled:false'));
 fs.mkdirSync(dst,{recursive:true});
 fs.writeFileSync(path.join(dst,'index.html'),html,'utf8');
+fs.copyFileSync('zags/privacy.html',path.join(dst,'privacy.html'));
 fs.writeFileSync(path.join(dst,'robots.txt'),'User-agent: *\nDisallow: /\n','utf8');
 console.log('PASS: standalone hosting build; '+Buffer.byteLength(html)+' bytes, published payment UI off');
