@@ -18,15 +18,15 @@
 <div class="box">
 <h1>Оставить свою запись</h1>
 <p class="small">После заполнения вы перейдёте на защищённую страницу оплаты Т-Банка. После успешной оплаты запись будет опубликована автоматически.</p>
-<div id="messageBox"></div>
+<div id="messageBox" role="status" aria-live="polite"></div>
 <form id="form">
 <div class="grid">
-<div><label>Имя или псевдоним</label><input id="name" maxlength="80" placeholder="Например: Дмитрий"></div>
-<div><label>Город</label><input id="city" maxlength="100" placeholder="Например: Москва"></div>
+<div><label for="name">Имя или псевдоним</label><input id="name" autocomplete="nickname" maxlength="80" placeholder="Например: Дмитрий"></div>
+<div><label for="city">Город</label><input id="city" autocomplete="address-level2" maxlength="100" placeholder="Например: Москва"></div>
 </div>
-<label>Твоя запись</label>
-<textarea id="message" maxlength="500" required placeholder="Напиши что-нибудь, что хочется оставить после себя..."></textarea>
-<label>Как будет выглядеть твой след</label>
+<div class="field-meta"><label for="message">Твоя запись</label><output id="messageCount" class="char-count" for="message" aria-live="polite">0 / 500</output></div>
+<textarea id="message" minlength="2" maxlength="500" required placeholder="Напиши что-нибудь, что хочется оставить после себя..."></textarea>
+<label for="plan">Как будет выглядеть твой след</label>
 <select id="plan">
 <option value="basic">Обычная — 50 ₽</option>
 <option value="highlight">Выделенная — 100 ₽</option>
@@ -55,6 +55,15 @@ function updatePlan(){
 }
 plan.addEventListener("change",updatePlan);
 updatePlan();
+
+const messageField=document.getElementById("message");
+const messageCount=document.getElementById("messageCount");
+function updateMessageCount(){
+  const length=messageField.value.length;
+  messageCount.textContent=length+" / 500";
+}
+messageField.addEventListener("input",updateMessageCount);
+updateMessageCount();
 
 document.getElementById("form").addEventListener("submit",async(e)=>{
   e.preventDefault();
