@@ -41,3 +41,31 @@ jobs:
           assert not Path('CNAME').exists(), 'Unexpected switch to new domain before DNS/SSL is ready'
           print('PASS: public metadata, robots, sitemap, protected pages and safe payment staging')
           PY
+      - name: Read-only public site smoke check
+        run: |
+          node - <<'JS'
+          const base='https://dimontattoo495-afk.github.io/ya-byl-zdes/';
+          async function get(path,needle){
+            let last='';
+            for(let i=0;i<5;i++){
+              try{
+                const r=await fetch(base+path,{signal:AbortSignal.timeout(12000),redirect:'follow'});
+                last='HTTP '+r.status;
+                const html=await r.text();
+                if(r.ok&&html.includes(needle)){
+                  console.log('PASS '+path+' HTTP '+r.status);return;
+                }
+                last+= ' / missing expected content';
+              }catch(e){last=e.message;}
+              if(i<4) await new Promise(ok=>setTimeout(ok,8000));
+            }
+            throw Error(path+': '+last);
+          }
+          (async()=>{
+            await get('','id="zags-title"');
+            await get('sitemap.xml','<urlset');
+            await get('robots.txt','Sitemap:');
+            await get('zags/','paymentsEnabled:false');
+            console.log('PASS: public main site, sitemap, robots and ZAGS');
+          })().catch(e=>{console.error(e.message);process.exit(1)});
+          JS
