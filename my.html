@@ -18,6 +18,7 @@
 <h1>Мои записи</h1>
 <div id="newNotice"></div>
 <p class="small">Доступ к этим записям защищён секретным ключом. Сохраните ссылку этой страницы и никому её не отправляйте.</p>
+<div class="notice" role="note"><b>Важно при смене адреса сайта:</b> перед переездом сохраните секретную ссылку через кнопку ниже. На новом домене откройте её один раз — так вы вернёте доступ к своим записям. Не публикуйте ссылку и не передавайте посторонним.</div>
 <label>Секретная ссылка управления</label>
 <input id="secretLink" readonly onclick="this.select()">
 <div class="actions"><button id="copyLink">Скопировать ссылку</button></div>
@@ -34,7 +35,8 @@ const ownerKey=YBZ.getOwnerKey();
 let currentEntries=[];
 
 const secretUrl=new URL("./my.html",location.href);
-secretUrl.searchParams.set("key",ownerKey);
+secretUrl.searchParams.delete("key");
+secretUrl.hash="key="+ownerKey;
 document.getElementById("secretLink").value=secretUrl.href;
 
 document.getElementById("copyLink").onclick=async()=>{
