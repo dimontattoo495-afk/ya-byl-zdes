@@ -12,6 +12,7 @@ on:
       - 'admin.js'
       - 'payment-return.html'
       - 'tests/admin-ten-rub.cjs'
+      - 'tests/zags-journey.cjs'
       - '.github/workflows/mobile-ui.yml'
   workflow_dispatch:
 jobs:
@@ -35,6 +36,7 @@ jobs:
           sleep 2
           timeout 135s node tests/mobile-layout.cjs
           timeout 35s node tests/admin-ten-rub.cjs
+          timeout 45s node tests/zags-journey.cjs
       - name: Attach screenshots
         if: always()
         uses: actions/upload-artifact@v4
@@ -44,5 +46,6 @@ jobs:
             /tmp/ybz-mobile-home.png
             /tmp/ybz-mobile-create.png
             /tmp/ybz-mobile-zags.png
+            /tmp/ybz-zags-flow-demo.png
           retention-days: 7
           if-no-files-found: ignore
