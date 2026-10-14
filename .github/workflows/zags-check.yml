@@ -67,12 +67,6 @@ jobs:
           name: zags-web-preview
           path: zags-web-preview.zip
           retention-days: 7
-      - name: Publish one-time anonymous HTTPS preview
-        timeout-minutes: 4
-        run: |
-          set -euo pipefail
-          npx --yes netlify-cli@latest deploy --allow-anonymous --dir dist/zags-preview --no-build --json >/tmp/zags-netlify-deploy.json
-          node -e 'const fs=require("fs");const a=JSON.parse(fs.readFileSync("/tmp/zags-netlify-deploy.json","utf8"));const url=a.deploy_url||a.url;if(!url||!url.startsWith("https://"))process.exit(1);console.log("ZAGS_ANONYMOUS_PREVIEW_URL="+url);console.log("IMPORTANT: anonymous previews must be claimed within 1 hour or expire");'
       - name: Package preview files
         run: zip -r zags-staging-preview.zip zags/index.html zags/README.md zags/templates config.js
       - name: Upload staging preview artifact
