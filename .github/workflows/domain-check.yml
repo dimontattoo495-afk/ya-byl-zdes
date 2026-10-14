@@ -1,0 +1,60 @@
+name: Check new custom domain
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/domain-check.yml'
+      - 'CNAME'
+  workflow_dispatch:
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    permissions:
+      contents: read
+    steps:
+      - name: Confirm GitHub Pages custom-domain configuration and DNS
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          node - <<'JS'
+          const dns = require('node:dns/promises');
+          const expected = ['185.199.108.153','185.199.109.153','185.199.110.153','185.199.111.153'];
+          (async () => {
+            const result = await fetch('https://api.github.com/repos/dimontattoo495-afk/ya-byl-zdes/pages', {
+              headers: {
+                'Accept': 'application/vnd.github+json',
+                'Authorization': 'Bearer '+process.env.GH_TOKEN,
+                'X-GitHub-Api-Version': '2022-11-28'
+              },
+              signal: AbortSignal.timeout(10000)
+            });
+            const settings = await result.json().catch(()=>({}));
+            console.log('PAGES_SETTINGS '+JSON.stringify({
+              http:result.status,
+              cname:settings.cname||null,
+              https_enforced:settings.https_enforced??null,
+              status:settings.status||null,
+              html_url:settings.html_url||null,
+              build_type:settings.build_type||null
+            }));
+            try {
+              const ips = (await dns.resolve4('yabylzdes.ru')).sort();
+              console.log('APEX_DNS '+JSON.stringify({ips,match:expected.every(ip=>ips.includes(ip))&&ips.length===4}));
+            } catch (e) { console.log('APEX_DNS '+JSON.stringify({error:e.code||e.message})); }
+            try {
+              const aliases = await dns.resolveCname('www.yabylzdes.ru');
+              console.log('WWW_CNAME '+JSON.stringify({aliases,match:aliases.some(x=>x.replace(/\\.$/,'').toLowerCase()==='dimontattoo495-afk.github.io')}));
+            } catch(e) {console.log('WWW_CNAME '+JSON.stringify({error:e.code||e.message})); }
+            for(const url of ['https://yabylzdes.ru/','https://www.yabylzdes.ru/','https://yabylzdes.ru/zags/']){
+              try {
+                const response = await fetch(url,{redirect:'follow',signal:AbortSignal.timeout(12000)});
+                const text = await response.text();
+                console.log('WEB_RESULT '+JSON.stringify({url,status:response.status,finalUrl:response.url,site:response.url.endsWith('/zags/')?'zags':'main',correctContent:response.url.includes('/zags/')?text.includes('paymentsEnabled:false'):text.includes('Я БЫЛ ЗДЕСЬ')}));
+              } catch(e) {
+                console.log('WEB_RESULT '+JSON.stringify({url,error:e.cause?.code||e.code||e.message}));
+              }
+            }
+          })().catch(e=>{console.error('CHECK_ERROR '+e.message);process.exitCode=1});
+          JS
