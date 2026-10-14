@@ -25,6 +25,13 @@ jobs:
           node --check /tmp/zags-module.mjs
       - name: Read-only Supabase connectivity and access probe
         run: node zags/backend-probe.cjs
+      - name: Check published GitHub Pages ZAGS page
+        run: timeout 55s node zags/check-main-page.cjs
+      - name: Confirm Netlify automation configuration
+        run: |
+          test -f netlify.toml
+          grep -F 'node zags/site-build.cjs' netlify.toml
+          grep -F 'publish = "dist/zags-preview"' netlify.toml
       - name: Install browser test dependency
         run: |
           npm install --no-save playwright
