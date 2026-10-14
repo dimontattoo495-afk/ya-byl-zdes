@@ -62,6 +62,20 @@ th{color:#bdbdc7;font-size:12px;position:sticky;top:0;background:var(--panel)}.t
       <div class="stat"><span>Тестовая сумма</span><b id="sTestRevenue">—</b></div>
     </section>
     <div class="last-payment">Последний успешный боевой платёж: <b id="lastLivePayment">—</b></div>
+    <section class="panel" id="zagsAdminStats">
+      <div class="panel-title-row">
+        <div><h2>Виртуальный ЗАГС</h2><p class="panel-note">Общая статистика заявлений. Личные данные и приглашения не отображаются.</p></div>
+        <a href="./zags/" class="btn2">Открыть ЗАГС ↗</a>
+      </div>
+      <div class="stats" aria-label="Статистика виртуального ЗАГСа">
+        <div class="stat"><span>ВСЕГО ЗАЯВЛЕНИЙ</span><b id="zsTotal">—</b></div>
+        <div class="stat"><span>ОЖИДАЮТ ПАРТНЁРА</span><b id="zsPending">—</b></div>
+        <div class="stat"><span>ПАРТНЁР ПРИНЯЛ</span><b id="zsAccepted">—</b></div>
+        <div class="stat"><span>ЗАВЕРШЁННЫХ ЦЕРЕМОНИЙ</span><b id="zsMarried">—</b></div>
+      </div>
+      <p class="small">Оплата и настоящие памятные свидетельства ЗАГСа пока отключены. Демонстрация бесплатна.</p>
+    </section>
+
 
     <section class="panel" id="adminTenRubTest">
       <div class="panel-title-row"><h2>Проверка оплаты · 10 ₽</h2><div class="panel-note">Только администратор · до 31 октября 2026</div></div>
@@ -98,5 +112,5 @@ th{color:#bdbdc7;font-size:12px;position:sticky;top:0;background:var(--panel)}.t
     </section>
   </main>
 </div>
-<script src="./config.js"></script><script src="./admin.js?v=admin-check-10rub-v5"></script>
+<script src="./config.js"></script><script src="./admin.js?v=zags-admin-summary-20261014"></script>
 </body></html>
