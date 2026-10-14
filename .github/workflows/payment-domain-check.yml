@@ -1,0 +1,57 @@
+name: Verify payment-return redirect after custom domain switch
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/payment-domain-check.yml'
+  workflow_dispatch:
+  schedule:
+    - cron: '37 6 * * *'
+permissions:
+  contents: read
+  pages: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Verify read-only redirects and HTTPS pages without payments
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          node - <<'JS'
+          async function probe(url,redirect='manual') {
+            const r=await fetch(url,{redirect,signal:AbortSignal.timeout(13000)});
+            return {url,status:r.status,location:r.headers.get('location'),finalUrl:r.url,body:redirect==='follow'?await r.text():''};
+          }
+          (async()=>{
+            const params='status=success&no=999999999&provider=tbank&order=redirect-test';
+            const legacy='https://dimontattoo495-afk.github.io/ya-byl-zdes/payment-return.html?'+params;
+            const moved=await probe(legacy);
+            console.log('OLD_PAYMENT_RETURN '+JSON.stringify({...moved,body:undefined}));
+            if(![301,302,307,308].includes(moved.status))
+              throw Error('Legacy payment return URL did not redirect');
+            const to=new URL(moved.location,legacy);
+            if(to.hostname!=='yabylzdes.ru'||to.pathname!=='/payment-return.html'||to.searchParams.get('no')!=='999999999'||to.searchParams.get('provider')!=='tbank')
+              throw Error('Legacy payment return lost payment URL path or query');
+            const fresh=await probe('https://yabylzdes.ru/payment-return.html?'+params,'follow');
+            console.log('NEW_PAYMENT_RETURN '+JSON.stringify({status:fresh.status,url:fresh.finalUrl}));
+            if(fresh.status!==200||!fresh.body.includes('name="robots" content="noindex,nofollow,noarchive"'))
+              throw Error('HTTPS payment return page is not ready');
+            const legacyHome=await probe('https://dimontattoo495-afk.github.io/ya-byl-zdes/');
+            console.log('OLD_HOME '+JSON.stringify({...legacyHome,body:undefined}));
+            const httpHome=await probe('http://yabylzdes.ru/');
+            console.log('HTTP_HOME '+JSON.stringify({...httpHome,body:undefined}));
+            const pages=await fetch('https://api.github.com/repos/dimontattoo495-afk/ya-byl-zdes/pages',{
+              headers:{Accept:'application/vnd.github+json',Authorization:'Bearer '+process.env.GH_TOKEN},
+              signal:AbortSignal.timeout(13000)
+            });
+            const settings=await pages.json();
+            console.log('PAGES_HTTPS '+JSON.stringify({http:pages.status,domain:settings.cname,enforced:settings.https_enforced}));
+            if(settings.cname!=='yabylzdes.ru')throw Error('Wrong live GitHub Pages domain');
+            if(!settings.https_enforced)console.log('MANUAL_HTTPS_ENFORCEMENT_REQUIRED: GitHub Settings > Pages > Enforce HTTPS');
+            else if(![301,302,307,308].includes(httpHome.status)||!String(httpHome.location||'').startsWith('https://'))
+              throw Error('GitHub Pages claims HTTPS enforced but insecure HTTP did not redirect');
+            console.log('PASS: payment return path/query preserved, new site reachable; enforcement reported separately');
+          })().catch(e=>{console.error(e);process.exitCode=1});
+          JS
