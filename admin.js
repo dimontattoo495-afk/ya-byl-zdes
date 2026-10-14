@@ -71,6 +71,15 @@
       throw new Error("Некоторые показатели статистики недоступны");
   }
 
+  async function loadZagsSummary(){
+    const d=await rpc("zags_admin_summary");
+    const v=Array.isArray(d)?d[0]:d;
+    $("zsTotal").textContent=fmt(v?.total);
+    $("zsPending").textContent=fmt(v?.pending_partner);
+    $("zsAccepted").textContent=fmt(v?.accepted);
+    $("zsMarried").textContent=fmt(v?.married);
+  }
+
   async function loadEntries(){
     const rows=await rpc("ybz_admin_entries_v2",{
       p_filter:$("entryFilter").value,p_search:$("entrySearch").value.trim(),p_limit:200,p_offset:0
@@ -121,10 +130,10 @@
   async function refreshAll(){
     const status=$("adminDataStatus");
     status.textContent="Загружаем статистику Supabase…";
-    const jobs=await Promise.allSettled([loadSummary(),loadEntries(),loadPayments()]);
+    const jobs=await Promise.allSettled([loadSummary(),loadEntries(),loadPayments(),loadZagsSummary()]);
     const failed=jobs.filter(j=>j.status==="rejected");
     status.textContent=failed.length
-      ? "Supabase отвечает с задержкой: "+failed.length+" из 3 разделов не загрузились. Попробуйте «Обновить всё» позже. Проверка платежа 10 ₽ доступна отдельно."
+      ? "Supabase отвечает с задержкой: "+failed.length+" из "+jobs.length+" разделов не загрузились. Попробуйте «Обновить всё» позже. Проверка платежа 10 ₽ доступна отдельно."
       : "Данные обновлены. Проверка платежа 10 ₽ доступна отдельно.";
   }
 
