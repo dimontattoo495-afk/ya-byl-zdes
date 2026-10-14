@@ -42,27 +42,33 @@
   async function verifyAdmin(){if(await rpc("ybz_is_admin")!==true)throw new Error("У пользователя нет прав администратора")}
 
   async function loadSummary(){
-    const [summaryRows,payRows]=await Promise.all([
+    const [summaryResult,paymentResult]=await Promise.allSettled([
       rpc("ybz_admin_summary"),
       rpc("ybz_admin_payment_dashboard_v1")
     ]);
-    const s=Array.isArray(summaryRows)?summaryRows[0]:summaryRows;
-    const p=Array.isArray(payRows)?payRows[0]:payRows;
-
-    $("sReal").textContent=fmt(s?.real_published);
-    $("sPending").textContent=fmt(s?.pending_count);
-    $("sHidden").textContent=fmt(s?.hidden_count);
-    $("sViews").textContent=fmt(s?.total_views);
-
-    $("sLivePayments").textContent=fmt(p?.live_payments);
-    $("sLiveRevenue").textContent=money(p?.live_revenue_rub);
-    $("sBasic50").textContent=fmt(p?.basic_50_count);
-    $("sHighlight100").textContent=fmt(p?.highlight_100_count);
-    $("sVip300").textContent=fmt(p?.vip_300_count);
-    $("sTbankLive").textContent=fmt(p?.tbank_live_count);
-    $("sTestPayments").textContent=fmt(p?.test_payments);
-    $("sTestRevenue").textContent=money(p?.test_revenue_rub);
-    $("lastLivePayment").textContent=dateFmt(p?.last_live_payment_at);
+    if(summaryResult.status==="fulfilled"){
+      const rows=summaryResult.value;
+      const data=Array.isArray(rows)?rows[0]:rows;
+      $("sReal").textContent=fmt(data?.real_published);
+      $("sPending").textContent=fmt(data?.pending_count);
+      $("sHidden").textContent=fmt(data?.hidden_count);
+      $("sViews").textContent=fmt(data?.total_views);
+    }
+    if(paymentResult.status==="fulfilled"){
+      const rows=paymentResult.value;
+      const data=Array.isArray(rows)?rows[0]:rows;
+      $("sLivePayments").textContent=fmt(data?.live_payments);
+      $("sLiveRevenue").textContent=money(data?.live_revenue_rub);
+      $("sBasic50").textContent=fmt(data?.basic_50_count);
+      $("sHighlight100").textContent=fmt(data?.highlight_100_count);
+      $("sVip300").textContent=fmt(data?.vip_300_count);
+      $("sTbankLive").textContent=fmt(data?.tbank_live_count);
+      $("sTestPayments").textContent=fmt(data?.test_payments);
+      $("sTestRevenue").textContent=money(data?.test_revenue_rub);
+      $("lastLivePayment").textContent=dateFmt(data?.last_live_payment_at);
+    }
+    if(summaryResult.status==="rejected" || paymentResult.status==="rejected")
+      throw new Error("Некоторые показатели статистики недоступны");
   }
 
   async function loadEntries(){
@@ -113,11 +119,13 @@
   }
 
   async function refreshAll(){
+    const status=$("adminDataStatus");
+    status.textContent="Загружаем статистику Supabase…";
     const jobs=await Promise.allSettled([loadSummary(),loadEntries(),loadPayments()]);
     const failed=jobs.filter(j=>j.status==="rejected");
-    if(failed.length){
-      msg("Некоторые данные админки пока не загрузились ("+failed.length+"/3). Supabase отвечает с задержкой. Попробуйте «Обновить всё» позже. Проверка 10 ₽ доступна независимо от статистики.","error");
-    }
+    status.textContent=failed.length
+      ? "Supabase отвечает с задержкой: "+failed.length+" из 3 разделов не загрузились. Попробуйте «Обновить всё» позже. Проверка платежа 10 ₽ доступна отдельно."
+      : "Данные обновлены. Проверка платежа 10 ₽ доступна отдельно.";
   }
 
   // Explicit one-off 10 RUB live checkout for the authenticated studio admin.
