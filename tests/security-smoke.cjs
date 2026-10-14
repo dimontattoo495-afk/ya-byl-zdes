@@ -71,6 +71,10 @@ assert(cabinet.includes('const visible=paid && e.status==="published"'),'Share l
 assert(cabinet.includes('const hiddenPaid=paid && e.status==="hidden"'),'Republish should only be offered for paid hidden records');
 
 assert(read('admin.js').includes('await verifyAdmin()'),'Admin client must verify server admin status');
+const adminScript=read('admin.js');
+assert(adminScript.includes('e.is_demo?'),'Delete controls must be restricted to demo entries');
+assert(adminScript.includes('e.payment_status==="paid"'),'Admin republish button requires confirmed payment');
+
 assert(read('zags/index.html').includes('paymentsEnabled:false'),'ZAGS live payments must remain disabled');
 assert(!fs.existsSync('CNAME'),'Do not redirect live users before new DNS and HTTPS work');
 console.log('PASS: safe cabinet links, admin verification, disabled ZAGS payments, stable site address');
