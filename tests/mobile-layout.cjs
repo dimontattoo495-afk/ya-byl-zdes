@@ -58,7 +58,7 @@ async function run(){
         await page.goto(base+'create.html',{waitUntil:'domcontentloaded',timeout:20000});
         assert.equal(await page.locator('label[for="message"]').count(),1,'Message label missing');
         await page.locator('#message').fill('Текст для проверки');
-        assert.match((await page.locator('#messageCount').textContent()).trim(),/^19 \/ 500$/);
+        assert.match((await page.locator('#messageCount').textContent()).trim(),/^18 \/ 500$/);
         await page.locator('#plan').selectOption('vip');
         assert.match(await page.locator('#price').textContent(),/300/);
         await fits(page,width,'Create form');
