@@ -113,6 +113,51 @@
 
   async function refreshAll(){await Promise.all([loadSummary(),loadEntries(),loadPayments()])}
 
+  // Explicit one-off 10 RUB live checkout for the authenticated studio admin.
+  // Never changes prices offered to ordinary visitors.
+  $("testPayment10Btn").addEventListener("click",async()=>{
+    const btn=$("testPayment10Btn"),notice=$("testPayment10Msg");
+    btn.disabled=true;
+    notice.textContent="Создаём безопасную тестовую запись и платёж…";
+    try{
+      const storageKey="ybz_admin_test_10_owner_key";
+      let key=localStorage.getItem(storageKey);
+      if(!key || !/^[0-9a-f]{64}$/i.test(key)){
+        const bytes=crypto.getRandomValues(new Uint8Array(32));
+        key=Array.from(bytes,b=>b.toString(16).padStart(2,"0")).join("");
+        localStorage.setItem(storageKey,key);
+      }
+      const result=await rpc("ybz_create_admin_10rub_test",{p_owner_key:key});
+      const row=Array.isArray(result)?result[0]:result;
+      if(!row?.public_no)throw new Error("Не получен номер тестовой записи");
+      const session=getSession();
+      if(!session?.access_token)throw new Error("Войдите в админку заново");
+      const response=await fetch(String(cfg.SUPABASE_URL).replace(/\/+$/,'')+"/functions/v1/create-payment",{
+        method:"POST",
+        headers:{
+          "Content-Type":"application/json",
+          "apikey":cfg.SUPABASE_ANON_KEY,
+          "Authorization":"Bearer "+session.access_token
+        },
+        body:JSON.stringify({owner_key:key,public_no:row.public_no,admin_test:true})
+      });
+      const payment=await response.json();
+      if(!response.ok || payment.error)throw new Error(payment.error||"Не удалось подготовить платёж");
+      if(payment.already_paid){
+        notice.textContent="Этот проверочный платёж уже успешно выполнен. Повторно платить не нужно.";
+        await refreshAll();return;
+      }
+      if(!/^https:\/\//i.test(payment.confirmation_url||""))throw new Error("Не получена защищённая ссылка оплаты");
+      localStorage.setItem("ybz_payment_test_public_no",String(row.public_no));
+      notice.textContent="Переходим на защищённую форму Т-Банка (10 ₽)…";
+      location.assign(payment.confirmation_url);
+    }catch(e){
+      notice.textContent="Ошибка: "+(e?.message||String(e));
+    }finally{
+      btn.disabled=false;
+    }
+  });
+
   $("loginForm").addEventListener("submit",async e=>{
     e.preventDefault();const btn=e.submitter,box=$("loginMsg");btn.disabled=true;box.innerHTML="";
     try{const s=await authLogin($("email").value.trim(),$("password").value);saveSession(s);await verifyAdmin();showApp();await refreshAll()}
