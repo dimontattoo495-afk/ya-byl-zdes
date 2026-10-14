@@ -25,7 +25,7 @@
       method:"POST",
       headers:{"Content-Type":"application/json","apikey":cfg.SUPABASE_ANON_KEY,"Authorization":`Bearer ${s.access_token}`},
       body:JSON.stringify(body),
-      ...(requestOptions.signal?{signal:requestOptions.signal}:{})
+      signal: requestOptions.signal || AbortSignal.timeout(15000)
     });
     const t=await res.text(); let d=null;
     try{d=t?JSON.parse(t):null}catch{d=t}
@@ -112,7 +112,13 @@
     </tr>`).join("")||`<tr><td colspan="7">Платежей пока нет</td></tr>`;
   }
 
-  async function refreshAll(){await Promise.all([loadSummary(),loadEntries(),loadPayments()])}
+  async function refreshAll(){
+    const jobs=await Promise.allSettled([loadSummary(),loadEntries(),loadPayments()]);
+    const failed=jobs.filter(j=>j.status==="rejected");
+    if(failed.length){
+      msg("Некоторые данные админки пока не загрузились ("+failed.length+"/3). Supabase отвечает с задержкой. Попробуйте «Обновить всё» позже. Проверка 10 ₽ доступна независимо от статистики.","error");
+    }
+  }
 
   // Explicit one-off 10 RUB live checkout for the authenticated studio admin.
   // Never changes prices offered to ordinary visitors.
