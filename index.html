@@ -59,6 +59,11 @@
     <p style="color:#c7abb7;font-size:12px;line-height:1.6;margin:16px 0 0">Это не государственная услуга. Оплата и проведение церемоний пока отключены. Данные тестовых заявлений сохраняются в Supabase.</p>
   </section>
 
+  <section id="zags-news" style="margin:28px 0;padding:22px;border:1px solid #654655;border-radius:16px;background:#211923" hidden>
+    <h2 style="margin:0 0 12px;color:#f3d9e0">♡ Виртуальные свадьбы · Новости</h2>
+    <div id="zags-news-list"></div>
+    <p style="font-size:11px;color:#baa9b6;margin:12px 0 0">Шуточные виртуальные церемонии, не являющиеся государственной регистрацией брака. Публикуются бесплатно с согласия обоих участников.</p>
+  </section>
   <h2>Последние записи</h2>
   <div id="status" class="loading">Загрузка…</div>
   <div class="feed" id="feed"></div>
@@ -136,6 +141,19 @@
 })();
 </script>
 
+<script>
+(async()=>{
+ try{
+  const rows=await YBZ.rpc('zags_public_news');
+  if(!Array.isArray(rows)||!rows.length)return;
+  const block=document.getElementById('zags-news');
+  const list=document.getElementById('zags-news-list');
+  const fmt=d=>new Date(d).toLocaleDateString('ru-RU',{day:'numeric',month:'long',year:'numeric',timeZone:'Europe/Moscow'});
+  list.innerHTML=rows.map(item=>'<article style="border-bottom:1px solid #49343f;padding:12px 0"><span style="color:#efdae0;font-size:16px">💍 '+YBZ.esc(item.first_name)+' и '+YBZ.esc(item.second_name)+'</span><p style="color:#d1b8c2;font-size:13px;margin:4px 0">Отпраздновали виртуальную свадьбу · '+fmt(item.celebrated_at)+'</p></article>').join('');
+  block.hidden=false;
+ }catch(err){console.warn('Wedding news unavailable');}
+})();
+</script>
 <div class="legal-footer" style="max-width:1000px;margin:28px auto;padding:20px;text-align:center;color:#777784;font-size:12px;line-height:1.8">
 <a href="./about.html" style="color:#aaaab4;text-decoration:none">О сервисе</a> ·
 <a href="./payment.html" style="color:#aaaab4;text-decoration:none">Оплата и возврат</a> ·
