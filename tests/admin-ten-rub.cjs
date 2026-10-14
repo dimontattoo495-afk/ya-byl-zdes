@@ -18,6 +18,7 @@ const base='http://127.0.0.1:8765/';
         const name=url.split('/').pop();
         let data=[];
         if(name==='ybz_is_admin')data=true;
+        if(name==='ybz_admin_entries_v2')data=[{public_no:987654321,name:'Админ-тест 10 ₽',price_rub:10,is_demo:true,plan:'basic',payment_status:'pending',status:'pending',created_at:'2026-10-14T10:22:28Z'}];
         if(name==='ybz_create_admin_10rub_test'){
           const body=JSON.parse(req.postData()||'{}');
           assert.match(body.p_owner_key,/^[0-9a-f]{64}$/i);
@@ -51,10 +52,10 @@ const base='http://127.0.0.1:8765/';
     await page.locator('#adminApp').waitFor({state:'visible',timeout:9000});
     await page.locator('#testPayment10Btn').click();
     await page.waitForURL('https://fake-payment.example.invalid/test-checkout',{timeout:10000});
-    assert.equal(orderCalls,1);
+    assert.equal(orderCalls,0,'An existing admin-test order must not trigger a new RPC');
     assert.equal(bankCalls,1);
     assert.match(await page.locator('h1').textContent(),/MOCK CHECKOUT/);
-    console.log('PASS: public tariffs unchanged; admin-only 10-RUB button makes authenticated mocked request');
+    console.log('PASS: public tariffs unchanged; existing 10-RUB order reused without slow create RPC');
     console.log('PASS: no real database writes, payment attempts, or bank calls');
     await ctx.close();
 
