@@ -45,6 +45,28 @@ jobs:
             /tmp/zags-mobile-landing.png
             /tmp/zags-mobile-form.png
           retention-days: 7
+      - name: Build standalone web preview
+        run: |
+          node zags/site-build.cjs
+          test -f dist/zags-preview/index.html
+          test -f dist/zags-preview/robots.txt
+          python3 - <<'PY'
+          from pathlib import Path
+          html=Path('dist/zags-preview/index.html').read_text(encoding='utf8')
+          assert 'paymentsEnabled:false' in html
+          assert 'SUPABASE_ANON_KEY' in html
+          assert 'ТЕСТОВАЯ ВЕРСИЯ' in html
+          assert '../config.js' not in html
+          assert 'href="../' not in html
+          print('PASS: independently deployable preview')
+          PY
+          cd dist/zags-preview && zip -9 -r ../../zags-web-preview.zip index.html robots.txt
+      - name: Upload standalone web preview
+        uses: actions/upload-artifact@v4
+        with:
+          name: zags-web-preview
+          path: zags-web-preview.zip
+          retention-days: 7
       - name: Package preview files
         run: zip -r zags-staging-preview.zip zags/index.html zags/README.md zags/templates config.js
       - name: Upload staging preview artifact
