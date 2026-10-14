@@ -1,0 +1,42 @@
+name: Verify published ZAGS
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'zags/**'
+      - '.github/workflows/zags-public-check.yml'
+  workflow_dispatch:
+jobs:
+  published-zags:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify source safety
+        run: |
+          test -f zags/index.html
+          grep -q 'paymentsEnabled:false' zags/index.html
+          grep -q 'ТЕСТОВАЯ ВЕРСИЯ' zags/index.html
+          grep -q 'noindex,nofollow,noarchive' zags/index.html
+      - name: Check GitHub Pages HTTPS
+        shell: bash
+        run: |
+          node - <<'JS'
+          (async()=>{
+            const url='https://dimontattoo495-afk.github.io/ya-byl-zdes/zags/';
+            for(let i=0;i<4;i++){
+              const r=await fetch(url,{redirect:'follow',signal:AbortSignal.timeout(12000)});
+              console.log('GitHub Pages response HTTP '+r.status);
+              if(r.ok){
+                const html=await r.text();
+                if(!html.includes('paymentsEnabled:false')||!html.includes('ТЕСТОВАЯ ВЕРСИЯ'))throw Error('Wrong page or payments unsafe');
+                console.log('PASS: live GitHub Pages ZAGS and disabled payment UI');
+                return;
+              }
+              if(i<3)await new Promise(resolve=>setTimeout(resolve,12000));
+            }
+            throw Error('Published GitHub Pages site not reachable');
+          })().catch(e=>{console.error(e.message);process.exit(1)});
+          JS
