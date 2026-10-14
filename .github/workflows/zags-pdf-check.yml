@@ -1,0 +1,20 @@
+name: ZAGS certificate isolated review
+on:
+  pull_request:
+    paths:
+      - 'zags/index.html'
+      - 'zags/pdf-static-check.cjs'
+      - '.github/workflows/zags-pdf-check.yml'
+  workflow_dispatch:
+jobs:
+  certificate-check:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node zags/pdf-static-check.cjs
+      - run: node --check /tmp/zags-review-module.mjs
