@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1400">
+<defs>
+ <pattern id="damask" width="140" height="140" patternUnits="userSpaceOnUse"><path d="M70 13 C30 55 32 92 70 128 C108 92 110 55 70 13M70 38 C49 60 49 80 70 103 C91 80 91 60 70 38" fill="none" stroke="#e6d4b4" stroke-width="2" opacity=".52"/><path d="M18 70 Q70 20 122 70 Q70 120 18 70" fill="none" stroke="#dfc7a5" opacity=".35"/></pattern>
+ <linearGradient id="gold" x2="1" y2="1"><stop stop-color="#7f461a"/><stop offset=".5" stop-color="#cfa463"/><stop offset="1" stop-color="#8a511d"/></linearGradient>
+ <g id="flourish" fill="none" stroke="url(#gold)" stroke-width="5" stroke-linecap="round"><path d="M0 80 C35 12 96 10 125 44 C154 80 88 95 93 58 C98 36 133 54 108 66 M13 80 C57 64 68 106 35 116 C11 124 5 98 22 96 M22 78 C45 40 68 16 122 17 M27 73 Q44 7 76 8"/><path d="M28 75 Q10 35 7 13 M44 60 Q50 38 72 30 M40 88 Q65 111 83 106"/><path d="M28 58 Q5 52 3 34 M73 32 Q64 8 86 3" stroke-width="3"/></g>
+ <g id="petal" fill="#d1a16b" stroke="#955d29" stroke-width="2"><path d="M0 0 C-22 -12 -38 -47 0 -72 C38 -47 22 -12 0 0"/><path d="M0 0 C-49 4 -65 -17 -44 -49 C-7 -39 3 -15 0 0"/><path d="M0 0 C49 4 65 -17 44 -49 C7 -39 -3 -15 0 0"/></g>
+ <g id="corner"><use href="#flourish"/><use href="#petal" transform="translate(126 137) scale(.7)"/><path d="M12 200 Q60 163 100 200 M30 180 Q70 140 122 172" fill="none" stroke="#aa753b" stroke-width="4"/></g>
+ </defs>
+ <rect width="1000" height="1400" fill="#fbf5e8"/><rect width="1000" height="1400" fill="url(#damask)"/>
+ <g fill="none" stroke="url(#gold)"><rect x="25" y="25" width="950" height="1350" stroke-width="5"/><rect x="38" y="38" width="924" height="1324" stroke-width="1.5"/><rect x="53" y="53" width="894" height="1294" stroke-width="1" stroke-dasharray="3 6"/></g>
+ <use href="#corner" transform="translate(56 65)"/><use href="#corner" transform="translate(944 65) scale(-1 1)"/><use href="#corner" transform="translate(56 1335) scale(1 -1)"/><use href="#corner" transform="translate(944 1335) scale(-1 -1)"/>
+ <g fill="none" stroke="url(#gold)" stroke-width="7"><circle cx="467" cy="150" r="36"/><circle cx="532" cy="150" r="36"/></g>
+ <path d="M320 198 Q375 150 428 203 Q500 241 570 203 Q625 150 680 198 M315 212 Q380 238 450 225 M550 225 Q620 238 685 212" fill="none" stroke="#b07d45" stroke-width="4"/>
+ <path d="M260 470 H425 M575 470 H740 M310 960 H435 M565 960 H690 M230 1235 H410 M590 1235 H770" stroke="#c19a68" stroke-width="3"/>
+ <g fill="#ae7740"><path d="M500 464 C470 430 460 472 500 492 C540 472 530 430 500 464"/><path d="M500 955 C475 925 464 963 500 986 C536 963 525 925 500 955"/><path d="M500 1228 C480 1205 469 1236 500 1257 C531 1236 520 1205 500 1228"/></g>
+ <g fill="none" stroke="#bd935f" stroke-width="3"><path d="M185 1100 Q220 1072 254 1100 M746 1100 Q780 1072 815 1100"/><path d="M190 310 Q265 284 330 311 M670 311 Q735 284 810 310"/></g>
+ </svg>
