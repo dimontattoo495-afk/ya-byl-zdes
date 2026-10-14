@@ -60,7 +60,7 @@ jobs:
           JS
 
       - name: Refresh new-domain status after verification
-        run: echo 'Checking registry, public DNS and HTTPS without changing production CNAME'
+        run: echo 'Fresh 2026-10-14 Beget DNS, .ru verification and HTTPS check (read only)'
       - name: Check RU registry delegation and public resolvers
         run: |
           python3 - <<'PY'
