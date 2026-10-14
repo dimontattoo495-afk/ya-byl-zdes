@@ -1,0 +1,5 @@
+# Index public informational pages. Sensitive pages contain their own noindex tags.
+User-agent: *
+Allow: /
+
+Sitemap: https://dimontattoo495-afk.github.io/ya-byl-zdes/sitemap.xml
