@@ -34,6 +34,8 @@ jobs:
           grep -F 'publish = "dist/zags-preview"' netlify.toml
       - name: Check short RU domain candidates (read only)
         run: node zags/domain-candidates-check.cjs
+      - name: Verify newly registered short domain (read only)
+        run: node zags/domain-live-probe.cjs
       - name: Install browser test dependency
         run: |
           npm install --no-save playwright
