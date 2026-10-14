@@ -57,5 +57,39 @@ const base='http://127.0.0.1:8765/';
     console.log('PASS: public tariffs unchanged; admin-only 10-RUB button makes authenticated mocked request');
     console.log('PASS: no real database writes, payment attempts, or bank calls');
     await ctx.close();
+
+    // Mock a successful bank return; the test owner key must not overwrite
+    // the existing owner's real account key in localStorage.
+    const returnContext=await browser.newContext({viewport:{width:390,height:900}});
+    const normalKey='aa'.repeat(32), testKey='bb'.repeat(32);
+    await returnContext.addInitScript(({normalKey,testKey})=>{
+      localStorage.setItem('ybz_owner_key',normalKey);
+      localStorage.setItem('ybz_admin_test_10_owner_key',testKey);
+      localStorage.setItem('ybz_payment_test_public_no','987654321');
+    },{normalKey,testKey});
+    const returnPage=await returnContext.newPage();
+    let testKeyQueried=false;
+    await returnPage.route('https://**/*',async route=>{
+      const req=route.request(),url=req.url();
+      if(url.includes('/rest/v1/rpc/ybz_get_my_entries')){
+        const body=JSON.parse(req.postData()||'{}');
+        if(body.p_owner_key===testKey){
+          testKeyQueried=true;
+          return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify([{
+            public_no:987654321,status:'published',payment_status:'paid',
+            message:'Технический тест',views:0,plan:'basic'
+          }])});
+        }
+        return route.fulfill({status:200,contentType:'application/json',body:'[]'});
+      }
+      return route.abort();
+    });
+    await returnPage.goto(base+'payment-return.html?status=success&no=987654321&provider=tbank',{waitUntil:'domcontentloaded'});
+    await returnPage.getByText('Проверочный платёж 10 ₽ успешен').waitFor({timeout:9000});
+    assert.equal(testKeyQueried,true,'Payment return must look up dedicated 10-RUB owner key');
+    assert.equal(await returnPage.locator('a[href="./admin.html"]').count(),1);
+    assert.equal(await returnPage.evaluate(()=>localStorage.getItem('ybz_owner_key')),normalKey);
+    console.log('PASS: test payment return preserves the normal owner key and points to admin panel');
+    await returnContext.close();
   }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exit(1)});
