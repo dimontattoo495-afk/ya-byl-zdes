@@ -24,7 +24,7 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           from xml.etree import ElementTree as ET
-          base='https://dimontattoo495-afk.github.io/ya-byl-zdes/'
+          base='https://yabylzdes.ru/'
           public=['index.html','create.html','about.html','payment.html','offer.html','privacy.html','contacts.html']
           for page in public:
               s=Path(page).read_text(encoding='utf-8')
@@ -40,13 +40,13 @@ jobs:
           expected={base if f=='index.html' else base+f for f in public}
           assert set(locs)==expected, f'sitemap mismatch: {set(locs)^expected}'
           assert 'Sitemap: '+base+'sitemap.xml' in Path('robots.txt').read_text(encoding='utf-8')
-          assert not Path('CNAME').exists(), 'Unexpected switch to new domain before DNS/SSL is ready'
+          assert Path('CNAME').read_text(encoding='utf-8').strip()=='yabylzdes.ru', 'GitHub Pages custom domain does not match sitemap'
           print('PASS: public metadata, robots, sitemap, protected pages and safe payment staging')
           PY
       - name: Read-only public site smoke check
         run: |
           node - <<'JS'
-          const base='https://dimontattoo495-afk.github.io/ya-byl-zdes/';
+          const base='https://yabylzdes.ru/';
           async function get(path,needle){
             let last='';
             for(let i=0;i<5;i++){
