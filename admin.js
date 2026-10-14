@@ -18,13 +18,14 @@
     return d;
   }
 
-  async function rpc(fn,body={}){
+  async function rpc(fn,body={},requestOptions={}){
     const s=getSession();
     if(!s?.access_token)throw new Error("Сессия администратора отсутствует");
     const res=await fetch(String(cfg.SUPABASE_URL).replace(/\/+$/,'')+`/rest/v1/rpc/${fn}`,{
       method:"POST",
       headers:{"Content-Type":"application/json","apikey":cfg.SUPABASE_ANON_KEY,"Authorization":`Bearer ${s.access_token}`},
-      body:JSON.stringify(body)
+      body:JSON.stringify(body),
+      ...(requestOptions.signal?{signal:requestOptions.signal}:{})
     });
     const t=await res.text(); let d=null;
     try{d=t?JSON.parse(t):null}catch{d=t}
@@ -118,7 +119,7 @@
   $("testPayment10Btn").addEventListener("click",async()=>{
     const btn=$("testPayment10Btn"),notice=$("testPayment10Msg");
     btn.disabled=true;
-    notice.textContent="Создаём безопасную тестовую запись и платёж…";
+    notice.textContent="Шаг 1/2: получаем существующую проверочную запись или создаём новую…";
     try{
       const storageKey="ybz_admin_test_10_owner_key";
       let key=localStorage.getItem(storageKey);
@@ -127,9 +128,11 @@
         key=Array.from(bytes,b=>b.toString(16).padStart(2,"0")).join("");
         localStorage.setItem(storageKey,key);
       }
-      const result=await rpc("ybz_create_admin_10rub_test",{p_owner_key:key});
+      const result=await rpc("ybz_create_admin_10rub_test",{p_owner_key:key},
+        {signal:AbortSignal.timeout(20000)});
       const row=Array.isArray(result)?result[0]:result;
       if(!row?.public_no)throw new Error("Не получен номер тестовой записи");
+      notice.textContent="Шаг 2/2: запись №"+row.public_no+" готова. Запрашиваем ссылку Т-Банка…";
       const session=getSession();
       if(!session?.access_token)throw new Error("Войдите в админку заново");
       const response=await fetch(String(cfg.SUPABASE_URL).replace(/\/+$/,'')+"/functions/v1/create-payment",{
@@ -139,7 +142,8 @@
           "apikey":cfg.SUPABASE_ANON_KEY,
           "Authorization":"Bearer "+session.access_token
         },
-        body:JSON.stringify({owner_key:key,public_no:row.public_no,admin_test:true})
+        body:JSON.stringify({owner_key:key,public_no:row.public_no,admin_test:true}),
+        signal:AbortSignal.timeout(45000)
       });
       const payment=await response.json();
       if(!response.ok || payment.error)throw new Error(payment.error||"Не удалось подготовить платёж");
@@ -152,7 +156,10 @@
       notice.textContent="Переходим на защищённую форму Т-Банка (10 ₽)…";
       location.assign(payment.confirmation_url);
     }catch(e){
-      notice.textContent="Ошибка: "+(e?.message||String(e));
+      const timeout=e?.name==="TimeoutError" || e?.name==="AbortError";
+      notice.textContent=timeout
+        ? "Ответ сервера слишком долгий. Уже созданная запись сохранена; повторное нажатие найдёт её, а не создаст новую. Проверьте соединение, подождите минуту и попробуйте ещё раз. Списание не происходит до подтверждения оплаты на стороне банка."
+        : "Не удалось подготовить платёж: "+(e?.message||String(e));
     }finally{
       btn.disabled=false;
     }
