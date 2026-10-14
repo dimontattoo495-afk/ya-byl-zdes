@@ -39,6 +39,10 @@
 (async function(){
   const no=Number(new URLSearchParams(location.search).get("no")||0);
   const ownerKey=YBZ.getOwnerKey();
+  const savedTestNo=Number(localStorage.getItem("ybz_payment_test_public_no")||0);
+  const testKey=savedTestNo===no ? localStorage.getItem("ybz_admin_test_10_owner_key") : null;
+  const ownerKeys=testKey && /^[0-9a-f]{64}$/i.test(testKey) && testKey!==ownerKey
+    ? [testKey,ownerKey] : [ownerKey];
   const title=document.getElementById("title");
   const lead=document.getElementById("lead");
   const status=document.getElementById("status");
@@ -55,18 +59,26 @@
 
   for(let i=0;i<15;i++){
     try{
-      const rows=await YBZ.rpc("ybz_get_my_entries",{p_owner_key:ownerKey}) || [];
-      const entry=rows.find(x=>Number(x.public_no)===no);
+      let entry=null;
+      for(const key of ownerKeys){
+        const rows=await YBZ.rpc("ybz_get_my_entries",{p_owner_key:key}) || [];
+        entry=rows.find(x=>Number(x.public_no)===no);
+        if(entry)break;
+      }
       if(entry && entry.status==="published" && entry.payment_status==="paid"){
-        title.textContent="Оплата прошла успешно";
-        lead.textContent=`Запись №${no.toLocaleString("ru-RU")} опубликована и доступна в общей ленте.`;
+        const adminTest=!!testKey && savedTestNo===no;
+        title.textContent=adminTest ? "Проверочный платёж 10 ₽ успешен" : "Оплата прошла успешно";
+        lead.textContent=adminTest
+          ? `Т-Банк подтвердил проверочную оплату записи №${no.toLocaleString("ru-RU")} на новом домене.`
+          : `Запись №${no.toLocaleString("ru-RU")} опубликована и доступна в общей ленте.`;
         status.className="notice";
         status.innerHTML="<b>Готово.</b> Т-Банк подтвердил оплату, публикация активирована автоматически.";
-        actions.innerHTML=`
-          <a class="primary" href="./entry.html#${encodeURIComponent(no)}">Открыть запись</a>
-          <a href="./my.html?paid=${encodeURIComponent(no)}">Мои записи</a>
-          <a href="./create.html">Создать новую</a>`;
-        YBZShare.renderShareBox(document.getElementById('shareAfterPay'),entry.public_no,entry.message||'',{compact:true});
+        actions.innerHTML=adminTest
+          ? `<a class="primary" href="./admin.html">Вернуться в админку</a>`
+          : `<a class="primary" href="./entry.html#${encodeURIComponent(no)}">Открыть запись</a>
+             <a href="./my.html?paid=${encodeURIComponent(no)}">Мои записи</a>
+             <a href="./create.html">Создать новую</a>`;
+        if(!adminTest)YBZShare.renderShareBox(document.getElementById('shareAfterPay'),entry.public_no,entry.message||'',{compact:true});
         return;
       }
     }catch(e){}
