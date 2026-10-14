@@ -83,9 +83,9 @@
         <td>${fmt(e.views)}</td>
         <td>${dateFmt(e.created_at)}</td>
         <td><div class="row-actions">
-          ${e.status!=="published"?`<button data-action="publish" data-no="${e.public_no}">Опубликовать</button>`:""}
+          ${e.status!=="published" && (e.is_demo || e.payment_status==="paid")?`<button data-action="publish" data-no="${e.public_no}">Опубликовать</button>`:""}
           ${e.status!=="hidden"?`<button data-action="hide" data-no="${e.public_no}">Скрыть</button>`:""}
-          <button class="danger" data-action="delete" data-no="${e.public_no}">Удалить</button>
+          ${e.is_demo?`<button class="danger" data-action="delete" data-no="${e.public_no}">Удалить пример</button>`:""}
         </div></td>
       </tr>`;
     }).join("")||`<tr><td colspan="10">Ничего не найдено</td></tr>`;
