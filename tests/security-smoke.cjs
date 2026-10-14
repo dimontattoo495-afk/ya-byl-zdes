@@ -65,6 +65,11 @@ const cabinet=read('my.html');
 assert(cabinet.includes('secretUrl.hash="key="+ownerKey;'),'Secret link must use fragment, not query');
 assert(!cabinet.includes('secretUrl.searchParams.set("key"'),'Old insecure link writer must be removed');
 assert(cabinet.includes('при смене адреса сайта'),'Warning about origin-local key must remain');
+assert(cabinet.includes('e.payment_status==="refunded"'),'Refunded records must have an explicit status');
+assert(cabinet.includes('Оплата возвращена — запись скрыта'),'Refunded record label must be truthful');
+assert(cabinet.includes('const visible=paid && e.status==="published"'),'Share links must only be offered for paid published records');
+assert(cabinet.includes('const hiddenPaid=paid && e.status==="hidden"'),'Republish should only be offered for paid hidden records');
+
 assert(read('admin.js').includes('await verifyAdmin()'),'Admin client must verify server admin status');
 assert(read('zags/index.html').includes('paymentsEnabled:false'),'ZAGS live payments must remain disabled');
 assert(!fs.existsSync('CNAME'),'Do not redirect live users before new DNS and HTTPS work');
