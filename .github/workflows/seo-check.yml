@@ -1,0 +1,43 @@
+name: SEO and safe domain migration checks
+on:
+  push:
+    branches: [main]
+    paths:
+      - '*.html'
+      - 'sitemap.xml'
+      - 'robots.txt'
+      - 'zags/**'
+      - '.github/workflows/seo-check.yml'
+  workflow_dispatch:
+jobs:
+  seo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate sitemap, metadata and payment safety
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          from xml.etree import ElementTree as ET
+          base='https://dimontattoo495-afk.github.io/ya-byl-zdes/'
+          public=['index.html','create.html','about.html','payment.html','offer.html','privacy.html','contacts.html']
+          for page in public:
+              s=Path(page).read_text(encoding='utf-8')
+              canonical=base if page=='index.html' else base+page
+              assert f'rel="canonical" href="{canonical}"' in s, f'{page}: wrong canonical'
+              assert 'name="description"' in s, f'{page}: no description'
+          for page in ['my.html','admin.html','payment-return.html','zags/index.html']:
+              s=Path(page).read_text(encoding='utf-8')
+              assert 'name="robots" content="noindex,nofollow,noarchive"' in s, f'{page}: should be noindex'
+          assert 'paymentsEnabled:false' in Path('zags/index.html').read_text(encoding='utf-8')
+          tree=ET.parse('sitemap.xml')
+          locs=[(node.text or '').strip() for node in tree.findall('.//{*}loc')]
+          expected={base if f=='index.html' else base+f for f in public}
+          assert set(locs)==expected, f'sitemap mismatch: {set(locs)^expected}'
+          assert 'Sitemap: '+base+'sitemap.xml' in Path('robots.txt').read_text(encoding='utf-8')
+          assert not Path('CNAME').exists(), 'Unexpected switch to new domain before DNS/SSL is ready'
+          print('PASS: public metadata, robots, sitemap, protected pages and safe payment staging')
+          PY
