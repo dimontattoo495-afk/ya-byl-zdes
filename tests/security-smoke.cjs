@@ -76,5 +76,5 @@ assert(adminScript.includes('e.is_demo?'),'Delete controls must be restricted to
 assert(adminScript.includes('e.payment_status==="paid"'),'Admin republish button requires confirmed payment');
 
 assert(read('zags/index.html').includes('paymentsEnabled:false'),'ZAGS live payments must remain disabled');
-assert(!fs.existsSync('CNAME'),'Do not redirect live users before new DNS and HTTPS work');
+assert(fs.readFileSync('CNAME','utf8').trim()==='yabylzdes.ru','GitHub Pages must serve the chosen verified custom domain');
 console.log('PASS: safe cabinet links, admin verification, disabled ZAGS payments, stable site address');
