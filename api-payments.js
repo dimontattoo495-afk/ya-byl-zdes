@@ -64,11 +64,21 @@
   }
 
   function getOwnerKey(){
+    // Secret links use a URL fragment: unlike query parameters, it is not sent to the server.
+    // Keep reading old ?key= links so existing users can recover their records after moving.
     const qs = new URLSearchParams(location.search);
-    const fromUrl = qs.get("key");
+    const fragment = /^#key=/i.test(location.hash || "") ? new URLSearchParams(location.hash.slice(1)) : null;
+    const fromUrl = (fragment && fragment.get("key")) || qs.get("key");
     if(fromUrl && /^[a-f0-9]{64}$/i.test(fromUrl)){
-      localStorage.setItem("ybz_owner_key", fromUrl);
-      return fromUrl;
+      const key = fromUrl.toLowerCase();
+      localStorage.setItem("ybz_owner_key", key);
+      try{
+        const clean = new URL(location.href);
+        clean.searchParams.delete("key");
+        if(fragment) clean.hash = "";
+        history.replaceState(history.state, "", clean.pathname + clean.search + clean.hash);
+      }catch(_){}
+      return key;
     }
     let key = localStorage.getItem("ybz_owner_key");
     if(!key){
