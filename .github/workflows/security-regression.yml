@@ -1,0 +1,23 @@
+name: Owner key and payment safety regression
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'api.js'
+      - 'api-payments.js'
+      - 'my.html'
+      - 'admin.js'
+      - 'zags/index.html'
+      - 'tests/security-smoke.cjs'
+      - '.github/workflows/security-regression.yml'
+  workflow_dispatch:
+jobs:
+  offline-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test secret-link transfer and guard critical features
+        run: node tests/security-smoke.cjs
