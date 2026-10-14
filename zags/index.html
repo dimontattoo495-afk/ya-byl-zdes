@@ -75,6 +75,7 @@ ${!demo&&!c.has_partner&&c.role===1&&c.payment_status==='unpaid'?'<div class="ac
 ${c.has_partner&&c.payment_status!=='paid'?`<div class="notice">${c.payment_status==='refunded'?'Оплата возвращена. Церемония и публикация недоступны.':!demo&&!cfg.paymentsEnabled?'Партнёр согласился. Заявление успешно создано — оплата и церемония пока не запущены.': 'Партнёр согласился. Оплатить церемонию может любой из вас — один раз на пару.'}</div>${c.payment_status!=='refunded'?(demo?`<button id="pay" class="primary">Демо: подтвердить оплату</button>`:cfg.paymentsEnabled?`<button id="pay" class="primary">${c.payment_status==='pending'?'Проверить / продолжить оплату':`Оплатить ${prices[c.plan]} ₽`}</button>`:'<p class="notice">Оплата временно отключена. Платёж не требуется и не принимается. Свидетельство станет доступно после запуска платежей.</p>'):''}`:''}
 ${c.payment_status==='paid'&&!married?`<div class="ceremony"><p class="eyebrow">ВАША ЦЕРЕМОНИЯ</p><h2>Выбираете ли вы друг друга?</h2><p>Быть рядом в маленьких радостях, делить большие мечты и беречь ваше «мы».</p>${c.vow1?`<p class="vow">«${e(c.vow1)}»</p>`:''}${c.vow2?`<p class="vow">«${e(c.vow2)}»</p>`:''}<p>${e(c.name1)}: ${c.yes1?'Да!':'ожидаем ответ'} · ${e(c.name2)}: ${c.yes2?'Да!':'ожидаем ответ'}</p>${canMarry(c)?`<button id="yes" class="primary" ${myYes?'disabled':''}>${myYes?'Ваше «Да» принято':'Да, выбираю!'}</button>`:`<p>Ждём выбранную дату: ${e(dateText(c.scheduled_at))}</p>`}</div>`:''}
 ${married?'<canvas id="certificate" class="certificate-preview" width="1600" height="1130"></canvas><div class="actions"><button id="download" class="primary">Скачать свидетельство (PNG)</button><button id="print-pdf" type="button">Сохранить в PDF</button>'+ (c.plan!=='basic'?'<button id="social">Картинка для соцсетей</button>':'')+'</div>':''}
+${married&&!demo?'<div class="rule"></div><h3>Ваша свадьба в новостях</h3><p>Бесплатная новость с вашими именами появится на главной странице «Я был здесь» только после отдельного согласия вас обоих.</p><div id="news-consent" class="notice">Проверяем согласия…</div>':''}
 ${c.has_partner?`<div class="rule"></div><h3>Ваша страница для друзей</h3><p>Публикация: ${publicVisible(c)?'открыта':'закрыта'}. Согласие ${e(c.name1)}: ${c.share1?'да':'нет'}; ${e(c.name2)}: ${c.share2?'да':'нет'}.</p>${!demo&&!cfg.paymentsEnabled?'<p class="notice">Страница для друзей и загрузка фото пока недоступны. Согласие на публичный показ данных сейчас не запрашиваем.</p>':`<label class="check"><input id="share" type="checkbox" ${c['share'+c.role]?'checked':''}>Разрешаю показать имена, фото и обещания на странице семьи</label>${publicVisible(c)?`<input class="invite-url" id="public-link" readonly aria-label="Ссылка для друзей" value="${demo?'Демонстрация — публичная ссылка не создаётся':e(publicUrl())}"><button id="copy-public">Скопировать ссылку для друзей</button>`:''}${c.plan!=='basic'?'<label for="photo">Совместное фото</label><input id="photo" type="file" accept="image/jpeg,image/png,image/webp"><p class="hint">После смены фото оба участника заново разрешают публикацию.</p>':''}`}`:''}
 ${c.plan==='party'?`<h3>Поздравления</h3>${(c.wishes||[]).map(w=>`<blockquote><b>${e(w.name)}</b><br>${e(w.message)}<br><button data-delete="${e(w.id)}" class="quiet">Скрыть</button></blockquote>`).join('')||'<p>Пока нет поздравлений. Друзья смогут оставить их на открытой странице.</p>'}`:''}<p class="fine">${disclaimer}</p></div><button id="my-list" class="text">Все мои заявления</button>`);
 $('#refresh').onclick=()=>run(refresh);$('#my-list').onclick=()=>run(showList);
@@ -110,7 +111,25 @@ if($('#photo'))$('#photo').onchange=ev=>run(async()=>{const file=ev.target.files
 if($('#copy-public'))$('#copy-public').onclick=()=>demo?status('В деморежиме публикация отключена'):copy(publicUrl());
 if(married){drawCertificate($('#certificate'),false);$('#download').onclick=()=>downloadCanvas($('#certificate'),'virtual-wedding-certificate.png');$('#print-pdf').onclick=()=>window.print();if($('#social'))$('#social').onclick=()=>{const canvas=document.createElement('canvas');canvas.width=1080;canvas.height=1920;drawCertificate(canvas,true);downloadCanvas(canvas,'we-are-married.png');};}
 document.querySelectorAll('[data-delete]').forEach(b=>b.onclick=()=>run(()=>change('delete_wish',{wish_id:b.dataset.delete})));
+if(married&&!demo)loadNewsConsent();
 if(!demo)poll=setInterval(()=>{if(!busy&&!document.hidden&&!['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName))run(refresh);},20000);
+}
+async function loadNewsConsent(){
+ const host=$('#news-consent');if(!host||!couple||demo)return;
+ const id=couple.id;
+ try{
+  const {data,error}=await sb.rpc('zags_news_status',{p_id:id});
+  if(error)throw error;
+  if(!$('#news-consent')||couple?.id!==id)return;
+  host.innerHTML='<label class="check"><input id="news-opt-in" type="checkbox">Согласен(на) на бесплатную публикацию наших имён в новости о виртуальной свадьбе.</label><p class="hint" id="news-state"></p>';
+  $('#news-opt-in').checked=!!data.mine;
+  $('#news-state').textContent=data.both?'Согласия получены: новость публикуется автоматически.':data.mine?'Ваше согласие получено. Ожидаем партнёра.':'Без вашего согласия новость не появится.';
+  $('#news-opt-in').onchange=ev=>run(async()=>{
+   const {error}=await sb.rpc('zags_set_news_consent',{p_id:id,p_consent:ev.target.checked});
+   if(error)throw error;
+   await loadNewsConsent();
+  });
+ }catch(err){if($('#news-consent'))$('#news-consent').textContent='Не удалось загрузить настройку новости. Попробуйте обновить страницу.';}
 }
 async function refresh(){if(demo){renderCouple();return;}couple=await rpc('get',{id:currentId()});renderCouple();}
 function acceptForm(c){panel(`<div class="card"><p class="eyebrow">ВАС ПРИГЛАСИЛИ</p><h2>${e(c.name1)} хочет сказать вам «да»</h2><p>Семья «${e(c.family)}» · ${e(names[c.plan])}</p><p>Принять приглашение можно бесплатно.</p><form id="accept"><label for="partner-name">Ваше имя на свидетельстве</label><input id="partner-name" maxlength="60" value="${e(c.name2)}" required>${c.plan!=='basic'?'<label for="partner-vow">Ваше обещание</label><textarea id="partner-vow" maxlength="500"></textarea>':''}<label class="check"><input type="checkbox" required>Я согласен на шуточную виртуальную свадьбу. ${disclaimer}</label><button class="primary">Принять приглашение</button></form></div>`);$('#accept').onsubmit=ev=>{ev.preventDefault();const data={name:$('#partner-name').value.trim(),vow:$('#partner-vow')?.value.trim()||'',token:invite,consent:true};run(async()=>{const accept=async()=>{if(!couple)couple=c;await change('accept',data);sessionStorage.removeItem(inviteKey);};if(demo||await needAuth(accept))await accept();});};}
