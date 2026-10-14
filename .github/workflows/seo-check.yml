@@ -8,6 +8,8 @@ on:
       - 'robots.txt'
       - 'zags/**'
       - '.github/workflows/seo-check.yml'
+  schedule:
+    - cron: '23 5 * * *' # daily, around 08:23 Moscow time
   workflow_dispatch:
 jobs:
   seo:
