@@ -8,7 +8,6 @@
   const getSession=()=>{try{return JSON.parse(sessionStorage.getItem(KEY)||"null")}catch{return null}};
   const saveSession=s=>sessionStorage.setItem(KEY,JSON.stringify(s));
   const clearSession=()=>sessionStorage.removeItem(KEY);
-  let cachedTenRubTestEntry=null;
 
   async function authLogin(email,password){
     const res=await fetch(String(cfg.SUPABASE_URL).replace(/\/+$/,'')+"/auth/v1/token?grant_type=password",{
@@ -70,11 +69,6 @@
     const rows=await rpc("ybz_admin_entries_v2",{
       p_filter:$("entryFilter").value,p_search:$("entrySearch").value.trim(),p_limit:200,p_offset:0
     });
-    // Reuse a previously created test order; avoid a second RPC that can stall
-    // on unstable connections even after the database committed the insert.
-    const foundTest=(rows||[]).find(e=>e.is_demo===true &&
-      Number(e.price_rub)===10 && e.name==="Админ-тест 10 ₽");
-    if(foundTest)cachedTenRubTestEntry=foundTest;
     $("entriesBody").innerHTML=(rows||[]).map(e=>{
       const type=e.is_demo?`<span class="tag demo">ДЕМО</span>`:`<span class="tag ok">РЕАЛЬНАЯ</span>`;
       const sc=e.status==="pending"?"pending":(e.status==="published"?"ok":"");
@@ -125,7 +119,7 @@
   $("testPayment10Btn").addEventListener("click",async()=>{
     const btn=$("testPayment10Btn"),notice=$("testPayment10Msg");
     btn.disabled=true;
-    notice.textContent="Шаг 1/2: получаем существующую проверочную запись или создаём новую…";
+    notice.textContent="Готовим защищённую ссылку оплаты без создания новой записи…";
     try{
       const storageKey="ybz_admin_test_10_owner_key";
       let key=localStorage.getItem(storageKey);
@@ -134,15 +128,9 @@
         key=Array.from(bytes,b=>b.toString(16).padStart(2,"0")).join("");
         localStorage.setItem(storageKey,key);
       }
-      let row=cachedTenRubTestEntry;
-      if(!row){
-        const result=await rpc("ybz_create_admin_10rub_test",{p_owner_key:key},
-          {signal:AbortSignal.timeout(20000)});
-        row=Array.isArray(result)?result[0]:result;
-        if(row?.public_no)cachedTenRubTestEntry=row;
-      }
-      if(!row?.public_no)throw new Error("Не получен номер тестовой записи");
-      notice.textContent="Шаг 2/2: запись №"+row.public_no+" готова. Запрашиваем ссылку Т-Банка…";
+      // The authenticated payment function finds the ALREADY CREATED
+      // one-off test order by the browser's secret. No PostgREST RPC needed.
+      notice.textContent="Запрашиваем ссылку Т-Банка для существующей проверочной записи…";
       const session=getSession();
       if(!session?.access_token)throw new Error("Войдите в админку заново");
       const response=await fetch(String(cfg.SUPABASE_URL).replace(/\/+$/,'')+"/functions/v1/create-payment",{
@@ -152,7 +140,7 @@
           "apikey":cfg.SUPABASE_ANON_KEY,
           "Authorization":"Bearer "+session.access_token
         },
-        body:JSON.stringify({owner_key:key,public_no:row.public_no,admin_test:true}),
+        body:JSON.stringify({owner_key:key,admin_test:true}),
         signal:AbortSignal.timeout(45000)
       });
       const payment=await response.json();
@@ -162,7 +150,9 @@
         await refreshAll();return;
       }
       if(!/^https:\/\//i.test(payment.confirmation_url||""))throw new Error("Не получена защищённая ссылка оплаты");
-      localStorage.setItem("ybz_payment_test_public_no",String(row.public_no));
+      if(!Number.isSafeInteger(Number(payment.public_no)) || Number(payment.public_no)<=0)
+        throw new Error("Сервер не вернул номер проверочной записи");
+      localStorage.setItem("ybz_payment_test_public_no",String(payment.public_no));
       notice.textContent="Переходим на защищённую форму Т-Банка (10 ₽)…";
       location.assign(payment.confirmation_url);
     }catch(e){
