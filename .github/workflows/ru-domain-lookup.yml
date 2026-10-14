@@ -46,7 +46,7 @@ jobs:
               try:
                   with socket.create_connection(('whois.tcinet.ru',43),timeout=5) as sock:
                       sock.settimeout(5)
-                      sock.sendall((name+'\\r\\n').encode())
+                      sock.sendall(name.encode()+bytes([13,10]))
                       data=b''
                       while len(data)<16000:
                           chunk=sock.recv(4096)
