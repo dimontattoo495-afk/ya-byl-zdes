@@ -90,3 +90,16 @@ jobs:
                   print('PUBLIC_DNS '+json.dumps({'type':typ,'status':obj.get('Status'),'answers':obj.get('Answer',[])[:8]},ensure_ascii=False))
               except Exception as e:print('PUBLIC_DNS_ERROR '+typ+' '+str(e)[:100])
           PY
+
+      - name: Check old GitHub Pages address during DNS propagation
+        run: |
+          node - <<'JS'
+          (async()=>{
+            for(const url of ['https://dimontattoo495-afk.github.io/ya-byl-zdes/','https://dimontattoo495-afk.github.io/ya-byl-zdes/zags/']){
+              try{
+                const r=await fetch(url,{redirect:'manual',signal:AbortSignal.timeout(12000)});
+                console.log('OLD_LINK '+JSON.stringify({url,status:r.status,location:r.headers.get('location')}));
+              }catch(e){console.log('OLD_LINK '+JSON.stringify({url,error:e.message}));}
+            }
+          })();
+          JS
