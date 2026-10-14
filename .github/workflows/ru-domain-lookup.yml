@@ -1,0 +1,37 @@
+name: One-time RU domain availability lookup
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/ru-domain-lookup.yml'
+  workflow_dispatch:
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    permissions:
+      contents: read
+    steps:
+      - name: Query public RU registry
+        shell: bash
+        run: |
+          node - <<'JS'
+          const names=['bylzdes.ru','yabylzdes.ru','yabilzdes.ru','ya-byl-zdes.ru','byl-zdes.ru','blizhe18.ru'];
+          async function check(name){
+            for(const origin of ['https://rdap.tcinet.ru/rdap/domain/','https://rdap.org/domain/']){
+              try{
+                const r=await fetch(origin+name,{headers:{accept:'application/rdap+json, application/json'},redirect:'follow',signal:AbortSignal.timeout(12000)});
+                if(r.status===404)return {name,signal:'NO_RECORD_IN_RDAP',http:404,source:origin};
+                if(r.status===200){
+                  try{
+                    const v=await r.json();
+                    if(v.objectClassName==='domain'&&v.ldhName?.toLowerCase()===name)return {name,signal:'REGISTERED',http:200,source:origin};
+                  }catch(e){return{name,signal:'UNKNOWN_200',error:e.message.slice(0,70)}}
+                }
+                if(r.status===429)return{name,signal:'RATE_LIMIT',http:429};
+              }catch(e){if(origin.includes('rdap.org'))return {name,signal:'NETWORK_UNAVAILABLE',error:e.message.slice(0,70)};}
+            }
+            return {name,signal:'INCONCLUSIVE'};
+          }
+          (async()=>{const checks=await Promise.all(names.map(check));for(const d of checks)console.log('DOMAIN_CHECK '+JSON.stringify(d));})().catch(e=>{console.error(e);process.exit(1)});
+          JS
