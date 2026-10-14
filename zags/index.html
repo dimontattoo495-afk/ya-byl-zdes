@@ -89,7 +89,7 @@ if($('#share-invite'))$('#share-invite').onclick=async()=>{
    catch(err){if(err?.name!=='AbortError')status('Не получилось отправить. Скопируйте ссылку вручную.');}
  }else await copy(url);
 };
-if($('#renew'))$('#renew').onclick=()=>run(async()=>{const v=await rpc('renew',{id:c.id});sessionStorage.setItem('zags-link-'+c.id,v.token);renderCouple();});
+if($('#renew'))$('#renew').onclick=()=>run(async()=>{const v=await rpc('renew',{id:c.id});sessionStorage.setItem('zags-link-'+c.id,v.token);await refresh();status('Новая ссылка приглашения готова. Старая больше не действует.');});
 if($('#cancel-request'))$('#cancel-request').onclick=()=>run(async()=>{
   if(!confirm('Удалить это неоплаченное заявление? Приглашение перестанет работать. Вернуть заявление будет невозможно.'))return;
   const {data,error}=await sb.rpc('zags_cancel_unaccepted',{p_id:c.id}).abortSignal(AbortSignal.timeout(20000));
