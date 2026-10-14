@@ -1,0 +1,17 @@
+# Dedicated automatic build for the existing Netlify ZAGS site.
+# Connect the Netlify project to this repository and select branch zags-integration.
+[build]
+  command = "node zags/site-build.cjs"
+  publish = "dist/zags-preview"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow, noarchive"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "no-referrer"
+    X-Frame-Options = "DENY"
+    Cache-Control = "no-store"

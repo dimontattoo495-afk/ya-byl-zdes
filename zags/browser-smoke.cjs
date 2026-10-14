@@ -1,0 +1,25 @@
+const { chromium } = require('playwright');
+const assert = require('node:assert/strict');
+(async () => {
+  const browser = await chromium.launch({headless:true});
+  const page = await browser.newPage();
+  page.setDefaultTimeout(12000);
+  const errors=[];
+  page.on('pageerror',e=>errors.push(e.message));
+  await page.goto('http://127.0.0.1:8765/zags/',{waitUntil:'domcontentloaded'});
+  await page.locator('h1').first().waitFor();
+  assert.match(await page.title(),/Виртуальный ЗАГС/);
+  await page.getByRole('button',{name:/Сначала посмотреть пример/}).click();
+  await page.locator('#name1').waitFor();
+  await page.locator('#name1').fill('Александр');
+  await page.locator('#name2').fill('Анна');
+  await page.locator('#family').fill('Тестовая семья');
+  await page.locator('#create input[type=checkbox]').check();
+  await page.locator('#create').evaluate(el=>el.requestSubmit());
+  await page.getByText('Пригласите своего человека').waitFor();
+  await page.getByRole('button',{name:/Посмотреть приглашение партнёра/}).click();
+  await page.locator('#accept').waitFor();
+  assert.deepEqual(errors,[], 'Unexpected page exceptions');
+  await browser.close();
+  console.log('PASS: browser demo flow (landing -> create -> partner invitation)');
+})().catch(e=>{console.error(e);process.exitCode=1;});

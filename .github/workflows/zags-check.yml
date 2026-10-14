@@ -1,0 +1,82 @@
+name: ZAGS staging checks
+on:
+  pull_request:
+    paths:
+      - 'zags/**'
+      - 'config.js'
+      - '.github/workflows/zags-check.yml'
+  workflow_dispatch:
+jobs:
+  preflight:
+    timeout-minutes: 9
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify staged ZAGS files
+        run: node zags/preflight.cjs
+      - name: Validate app JavaScript syntax
+        run: |
+          node -e 'const fs=require("fs");const s=fs.readFileSync("zags/index.html","utf8");const a=s.indexOf("<script type=\"module\">");const b=s.lastIndexOf("</script>");if(a<0||b<a)process.exit(1);fs.writeFileSync("/tmp/zags-module.mjs",s.slice(a+22,b))'
+          node --check /tmp/zags-module.mjs
+      - name: Read-only Supabase connectivity and access probe
+        run: node zags/backend-probe.cjs
+      - name: Install browser test dependency
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Test demo in Chromium
+        run: |
+          python3 -m http.server 8765 --bind 127.0.0.1 >/tmp/zags-http.log 2>&1 &
+          timeout 50s node zags/browser-smoke.cjs
+          timeout 50s node zags/browser-otp.cjs
+          timeout 50s node zags/browser-recovery.cjs
+          timeout 50s node zags/browser-partner.cjs
+          timeout 50s node zags/browser-accepted-link.cjs
+          timeout 50s node zags/browser-mobile.cjs
+      - name: Verify deployed Netlify staging site (read only)
+        run: timeout 65s node zags/site-live-check.cjs
+      - name: Upload mobile screenshots
+        uses: actions/upload-artifact@v4
+        with:
+          name: zags-mobile-screenshots
+          path: |
+            /tmp/zags-mobile-landing.png
+            /tmp/zags-mobile-form.png
+          retention-days: 7
+      - name: Build standalone web preview
+        run: |
+          node zags/site-build.cjs
+          test -f dist/zags-preview/index.html
+          test -f dist/zags-preview/privacy.html
+          test -f dist/zags-preview/robots.txt
+          python3 - <<'PY'
+          from pathlib import Path
+          html=Path('dist/zags-preview/index.html').read_text(encoding='utf8')
+          assert 'paymentsEnabled:false' in html
+          assert 'SUPABASE_ANON_KEY' in html
+          assert 'ТЕСТОВАЯ ВЕРСИЯ' in html
+          assert '../config.js' not in html
+          assert 'href="../' not in html
+          assert 'href="privacy.html"' in html
+          print('PASS: independently deployable preview')
+          PY
+          cd dist/zags-preview && zip -9 -r ../../zags-web-preview.zip index.html privacy.html robots.txt
+      - name: Upload standalone web preview
+        uses: actions/upload-artifact@v4
+        with:
+          name: zags-web-preview
+          path: zags-web-preview.zip
+          retention-days: 7
+      - name: Package preview files
+        run: zip -r zags-staging-preview.zip zags/index.html zags/privacy.html zags/README.md zags/templates config.js
+      - name: Upload staging preview artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: zags-staging-preview
+          path: zags-staging-preview.zip
+          retention-days: 7
