@@ -92,20 +92,28 @@ async function load(){
       list.innerHTML=`<div class="notice">У этого секретного ключа пока нет записей.</div>`;
     }else{
       list.innerHTML=currentEntries.map(e=>{
-        const pending=e.status==="pending" || e.payment_status==="pending";
+        const refunded=e.payment_status==="refunded";
+        const paid=e.payment_status==="paid";
+        const visible=paid && e.status==="published";
+        const hiddenPaid=paid && e.status==="hidden";
+        const awaitingPayment=!paid && !refunded && e.status==="pending";
+        const state=refunded ? "Оплата возвращена — запись скрыта" :
+          visible ? "Опубликована" :
+          hiddenPaid ? "Скрыта владельцем" :
+          awaitingPayment ? "Ожидает оплаты" : "Недоступна для публикации";
         return `
         <article class="card ${YBZ.esc(e.plan)}" style="margin-top:14px">
           <div class="num">ЗАПИСЬ №${YBZ.fmt(e.public_no)}</div>
           <div class="msg">${YBZ.esc(e.message)}</div>
           <div class="meta">
-            ${pending ? "Ожидает оплаты" : "Опубликована"} · просмотры: ${YBZ.fmt(e.views)} · ${YBZ.esc(e.price_rub)} ₽
+            ${state} · просмотры: ${YBZ.fmt(e.views)} · ${YBZ.esc(e.price_rub)} ₽
           </div>
           <div class="actions">
-            ${pending ? `<button type="button" data-action="pay" data-no="${e.public_no}">ОПЛАТИТЬ ${YBZ.esc(e.price_rub)} ₽</button>` :
-              `<a href="./entry.html#${encodeURIComponent(e.public_no)}">Открыть</a>
-               <button type="button" data-action="sharetools" data-no="${e.public_no}">Поделиться / QR</button>`}
-            <button type="button" data-action="edit" data-no="${e.public_no}">Изменить</button>
-            ${!pending ? `<button type="button" data-action="toggle" data-no="${e.public_no}">${e.status==="hidden"?"Опубликовать":"Скрыть"}</button>` : ""}
+            ${awaitingPayment ? `<button type="button" data-action="pay" data-no="${e.public_no}">ОПЛАТИТЬ ${YBZ.esc(e.price_rub)} ₽</button>` : ""}
+            ${visible ? `<a href="./entry.html#${encodeURIComponent(e.public_no)}">Открыть</a>
+              <button type="button" data-action="sharetools" data-no="${e.public_no}">Поделиться / QR</button>` : ""}
+            ${paid ? `<button type="button" data-action="edit" data-no="${e.public_no}">Изменить</button>` : ""}
+            ${visible || hiddenPaid ? `<button type="button" data-action="toggle" data-no="${e.public_no}">${hiddenPaid?"Опубликовать":"Скрыть"}</button>` : ""}
           </div>
           <div data-inline-share hidden></div>
         </article>`;
