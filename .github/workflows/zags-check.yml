@@ -37,6 +37,8 @@ jobs:
           timeout 50s node zags/browser-recovery.cjs
           timeout 50s node zags/browser-partner.cjs
           timeout 50s node zags/browser-mobile.cjs
+      - name: Verify deployed Netlify staging site (read only)
+        run: timeout 65s node zags/site-live-check.cjs
       - name: Upload mobile screenshots
         uses: actions/upload-artifact@v4
         with:
