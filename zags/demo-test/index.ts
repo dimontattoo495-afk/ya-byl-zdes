@@ -110,6 +110,20 @@ async function bank(method:string, payload:Record<string,unknown>){
  if(!r.ok||response.Success!==true)throw new Error('Т-Банк не принял тестовую операцию');
  return response;
 }
+// GetState.Amount can represent the remaining refundable balance after Cancel.
+// The original CONFIRMED payment is always verified against 1000 kopecks before Cancel.
+// After a full refund, only an exact matching terminal, order, payment ID and
+// an allowed post-refund status can be accepted; refunded balance may be zero.
+function verifiedDemoState(state:any, order:any){
+ if(state?.Success!==true||state.TerminalKey!==terminal||
+    String(state.PaymentId)!==String(order.payment_id)||
+    String(state.OrderId)!==String(order.order_id))return false;
+ if(state.Status==='REFUNDED'||state.Status==='REFUNDING'){
+  return Number.isSafeInteger(state.Amount)&&
+   (state.Amount===0||state.Amount===order.amount);
+ }
+ return verifiedState(state,order,terminal);
+}
 Deno.serve(async(req:Request)=>{
  if(req.method==='OPTIONS')return new Response(null,{status:204,headers:cors});
  if(req.method!=='POST')return reply({error:'Method not allowed'},405);
@@ -155,7 +169,7 @@ Deno.serve(async(req:Request)=>{
     return reply({error:'Неверный идентификатор платежа'},400);
    const state=await bank('GetState',{PaymentId:body.payment_id});
    const order={payment_id:body.payment_id,order_id:body.order_id,amount};
-   if(!verifiedState(state,order,terminal))return reply({error:'Сумма или реквизиты платежа не совпадают'},409);
+   if(!verifiedDemoState(state,order))return reply({error:'Сумма или реквизиты платежа не совпадают'},409);
    if(body.action==='refund'){
     if(state.Status==='REFUNDED')return reply({status:'REFUNDED',refunded:true,confirmed:false,amount_kopecks:amount,demo:true,real_money_charged:false});
     if(state.Status==='REFUNDING')return reply({status:'REFUNDING',refunded:false,confirmed:false,amount_kopecks:amount,demo:true,real_money_charged:false});
@@ -164,7 +178,14 @@ Deno.serve(async(req:Request)=>{
     // Do not pass Receipt or Amount for a complete Cancel operation (T-Bank /v2/Cancel).
     await bank('Cancel',{PaymentId:body.payment_id});
     const after=await bank('GetState',{PaymentId:body.payment_id});
-    if(!verifiedState(after,order,terminal))return reply({error:'Не удалось проверить реквизиты тестового возврата'},409);
+    if(!verifiedDemoState(after,order)){
+     console.warn('ZAGS DEMO refund GetState shape mismatch',{
+      status:String(after.Status||''),amount:Number.isSafeInteger(after.Amount)?after.Amount:'not-integer',
+      terminal_ok:after.TerminalKey===terminal,order_ok:String(after.OrderId)===String(order.order_id),
+      payment_ok:String(after.PaymentId)===String(order.payment_id)
+     });
+     return reply({error:'Не удалось проверить реквизиты тестового возврата'},409);
+    }
     return reply({status:after.Status,refunded:after.Status==='REFUNDED',confirmed:false,amount_kopecks:amount,demo:true,real_money_charged:false});
    }
    return reply({status:state.Status,confirmed:state.Status==='CONFIRMED',refunded:state.Status==='REFUNDED',amount_kopecks:amount,
