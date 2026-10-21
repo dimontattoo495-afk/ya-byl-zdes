@@ -3,7 +3,7 @@ DO $qa$
 DECLARE
   creator_id uuid:='11111111-1111-4111-8111-111111111111';
   partner_id uuid:='22222222-2222-4222-8222-222222222222';
-  couple_id uuid;
+  v_couple_id uuid;
   vcount integer;
 BEGIN
  IF (SELECT count(*) FROM public.tp_listings)!=1 OR
@@ -30,8 +30,8 @@ BEGIN
  INSERT INTO auth.users(id) VALUES (creator_id),(partner_id);
  INSERT INTO zags.couples(creator,name1,name2,family,plan,invite_hash)
  VALUES(creator_id,'Тест А','Тест Б','Тест', 'basic',repeat('a',64))
- RETURNING id INTO couple_id;
- IF (SELECT payment_status FROM zags.couples WHERE id=couple_id)!='unpaid'
+ RETURNING id INTO v_couple_id;
+ IF (SELECT payment_status FROM zags.couples WHERE id=v_couple_id)!='unpaid'
  THEN RAISE EXCEPTION 'Orders must initially be unpaid'; END IF;
  IF (SELECT share1 OR share2 OR news1 OR news2 FROM zags.couples WHERE id=couple_id)
  THEN RAISE EXCEPTION 'Private couple exposed by default'; END IF;
@@ -45,8 +45,8 @@ BEGIN
    RAISE EXCEPTION 'Ceremony without two yes accepted';
  EXCEPTION WHEN check_violation THEN NULL; END;
  INSERT INTO zags.wishes(couple_id,author,name,message)
- VALUES(couple_id,partner_id,'Гость','Счастья');
- SELECT COUNT(*) INTO vcount FROM zags.wishes WHERE couple_id=couple_id;
+ VALUES(v_couple_id,partner_id,'Гость','Счастья');
+ SELECT COUNT(*) INTO vcount FROM zags.wishes w WHERE w.couple_id=v_couple_id;
  IF vcount!=1 THEN RAISE EXCEPTION 'Wishes insertion failed'; END IF;
  IF (SELECT COUNT(*) FROM pg_policies WHERE schemaname='zags')!=0
  THEN RAISE EXCEPTION 'No browser-visible row policies should exist yet'; END IF;
