@@ -4,12 +4,12 @@
 
 ## Подтверждено совместными проверками
 
-- Beget Cloud VPS «Ingenious Roman», Санкт-Петербург, Ubuntu, публичный адрес **45.80.68.40**; **2 CPU / 4 ГБ RAM / 40 ГБ NVMe**.
+- Beget Cloud VPS «Ingenious Roman», Санкт-Петербург, Ubuntu, публичный IP указан в панели Beget (не публикуется в инструкции); **2 CPU / 4 ГБ RAM / 40 ГБ NVMe**.
 - Домен `api.smoke-tattoo.ru` разрешается на этот VPS. На VPS работают Docker и самостоятельно развёрнутый Supabase, включая `supabase-db`, `supabase-auth`, `supabase-storage`, `supabase-edge-functions`, `supabase-caddy`.
 - В локальном PostgreSQL `postgres` обнаружены **14 таблиц `tp_*`** TATTOO PRICE. Наличие таблиц подтверждает локальное хранение части данных, но не гарантирует, что **все** API и данные приложения обслуживаются только VPS: возможны внешние компоненты.
 - Доступно около **8 ГБ диска**, использование ~79%; `docker system df` показывает заметные объёмы reclaimable, но очистка Docker до анализа назначения образов запрещена.
 - PostgreSQL принимает соединения: `pg_isready` вернул `accepting connections`.
-- Создан PostgreSQL `pg_dump` базы `postgres` в custom format на VPS, список объектов успешно читается `pg_restore -l`; копия **510081 байт** скачана на Windows ПК как `C:\Users\dmitr\tattoo-price-2026-10-21.dump`. Вычисление локального SHA256 выполнено. Сравнение контрольной суммы с серверной копией **ещё не выполнено**.
+- Создан PostgreSQL `pg_dump` базы `postgres` в custom format на VPS, список объектов успешно читается `pg_restore -l`; копия **510081 байт** скачана на Windows ПК как `tattoo-price-2026-10-21.dump` в пользовательской папке Windows. Вычисление локального SHA256 выполнено. Сравнение контрольной суммы с серверной копией **ещё не выполнено**.
 - На Beget найден старый снимок `TATTOO-PRICE-before-migration` от 14.09.2026; автоматические копии в панели Beget не обнаружены. Старый снимок не заменяет свежий проверенный полный бэкап.
 - `pg_dump` охватывает базу PostgreSQL, **но не обязательно охватывает Docker volumes, само содержимое пользовательских файлов Supabase Storage, конфигурацию Caddy, Edge Functions, .env и внешние сервисы**.
 - Проект «Я был здесь» и существующий ЗАГС пока используют другой облачный Supabase `qgccfpkvzrimwqmqrxwq` (`eu-west-1`); TATTOO PRICE в существующем репозитории использует `https://api.smoke-tattoo.ru`.
