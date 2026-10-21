@@ -31,6 +31,20 @@
 - **Следующий шаг:** отдельная подготовка Auth + безопасного маршрута API и контроля пользователей; только затем перенос данных и включение услуг. Не выполнять установку повторно — fail-closed guard остановит её на существующей схеме.
 - Свидетельство и текущий продакшен-сайт продолжают работать на прежней архитектуре. Успешное выполнение SQL **не означает законность сбора ПДн без проверки оператора, правовых оснований, политика/согласия и российской локализации всей цепочки**.
 
+## Вторая фаза на Beget — подтверждено скриншотом 21.10.2026 16:08 UTC
+
+Владелец самостоятельно выполнил `zags/beget/install-private-beta.sh` с Git commit `3840878a58f1bfeb8cfb52e959cbe3ad1f2d27c0`. Скриншот подтверждает:
+
+```
+ZAGS beta: Checking original phase 1 and read-only guard...
+ZAGS beta: Downloading reviewed, immutable phase-2 SQL...
+ZAGS beta: Applying SQL atomically; zero test accounts are enabled...
+ZAGS beta: PASS: beta gate installed; ZERO users enabled; TATTOO PRICE tables unchanged.
+ZAGS beta: Public ZAGS site/payment stays disabled; no OTP/CORS or data migration performed.
+```
+
+**Итого: `zags.preview_testers` создана, разрешённых аккаунтов 0, а вызовы `public.zags_v2_action` доступны только `authenticated` с проверкой allowlist внутри функции; `anon` по-прежнему запрещён.** Это не публичный запуск. Вход с сайта, SMTP/OTP, CORS, подключение URL, перенос облачных аккаунтов и платежи пока не завершены. Нельзя переустанавливать Phase 1/2 поверх существующих объектов.
+
 ## Следующий этап подготовлен в GitHub, но пока НЕ установлен на Beget
 
 - `zags/beget-preview.html` — отдельная техническая веб-страница для проверки российского входа и приглашений. Привязка к API и активная аутентификация **принудительно отключены** (`PREVIEW_ENABLED=false`, `ANON_KEY=""`); это не публичный запуск и не прием реальных данных.
