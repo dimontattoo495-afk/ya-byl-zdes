@@ -37,13 +37,25 @@ hr{border:0;border-top:1px solid #ede4e2;margin:24px 0}
 </section>
 <section id="loginSection" hidden>
 <h2>Войти для проверки</h2>
-<p class="muted">Для Beget используются отдельные учётные данные российского сервера. Вход использует существующую авторизацию российского Supabase. Не создавайте новые аккаунты для этого теста.</p>
+<p class="muted">Вход через российский Supabase Beget. Для двухстороннего теста нужны два разных подтверждённых аккаунта. Авторизация общая с TATTOO PRICE, но заявления ЗАГСа хранятся отдельно.</p>
 <form id="loginForm">
 <label for="email">Почта</label><input id="email" type="email" required autocomplete="email" maxlength="254">
 <label for="password">Пароль</label><input id="password" type="password" required minlength="8" autocomplete="current-password">
 <button type="submit">Войти</button>
 </form>
-<p class="muted">Самостоятельная регистрация отключена. Если владелец не разрешил ваш аккаунт, заявления ЗАГСа будут недоступны.</p>
+<p class="muted">Заявления доступны только аккаунтам, которые оператор отдельно допустил к тесту. Если второй участник ещё не зарегистрирован, откройте его ссылку приглашения и создайте аккаунт ниже.</p>
+<div id="registerPanel" hidden>
+<hr>
+<h2>Аккаунт второго участника</h2>
+<p class="muted">Регистрация разрешена только для проверки приглашения. На указанный email придёт письмо подтверждения от российского Supabase. До проверки письма и отдельного разрешения оператора доступ к заявлениям закрыт. Данные аккаунта используются общей системой входа, не передавайте пароль оператору.</p>
+<form id="registerForm">
+<label for="registerEmail">Почта второго участника</label><input id="registerEmail" type="email" maxlength="254" autocomplete="email" required>
+<label for="registerPassword">Новый пароль (минимум 12 символов)</label><input id="registerPassword" type="password" minlength="12" autocomplete="new-password" required>
+<label><input id="registerConsent" type="checkbox" required style="display:inline;width:auto"> Согласен(на) с <a href="private-beget-privacy.html" target="_blank" rel="noopener">описанием обработки данных российского теста</a></label>
+<button type="submit" id="registerSubmit">Зарегистрироваться и подтвердить почту</button>
+</form>
+<p class="muted" id="registerHelp" aria-live="polite"></p>
+</div>
 </section>
 <section id="appSection" hidden>
 <p class="ok">Вход на российский сервер выполнен.</p>
@@ -113,6 +125,28 @@ async function send(path,{method="GET",token=null,body=null}={}){
     if(!r.ok)throw Error(data.message||data.msg||data.error_description||data.error||"Ошибка HTTP "+r.status);
     return data;
   }finally{clearTimeout(timeout)}
+}
+async function registerForInvite(ev){
+  ev.preventDefault();
+  if(!inviteToken||!inviteId)return status("Регистрация доступна только по ссылке приглашения от первого участника",true);
+  if(!$("#registerConsent").checked)return status("Нужно согласие с обработкой данных",true);
+  const email=$("#registerEmail").value.trim();
+  const password=$("#registerPassword").value;
+  if(password.length<12)return status("Для теста нужен пароль от 12 символов",true);
+  const submit=$("#registerSubmit");submit.disabled=true;
+  status("Запрос регистрации отправляется в российский Supabase...");
+  try{
+    // GoTrue enforces local signup policy and email verification.
+    // No service-role key and no ZAGS permissions are issued by this step.
+    await send("/auth/v1/signup",{method:"POST",body:{email,password}});
+    $("#registerPassword").value="";
+    $("#registerHelp").textContent="Если регистрация разрешена, проверьте почту и подтвердите email. Затем оператор должен допустить второй аккаунт к закрытому тесту. Вернитесь на эту страницу по ссылке приглашения и войдите.";
+    $("#email").value=email;
+    status("Проверьте письмо подтверждения. Заявления ЗАГСа пока недоступны.");
+  }catch(err){
+    $("#registerPassword").value="";
+    status(message(err),true);
+  }finally{submit.disabled=false}
 }
 function saveSession(data){
   if(!data||!data.access_token||!data.user||!data.user.id)throw Error("Сервер не вернул действующую сессию");
@@ -223,7 +257,11 @@ $("#acceptForm").addEventListener("submit",accept);
 $("#logout").addEventListener("click",logout);
 $("#refresh").addEventListener("click",()=>refresh().catch(err=>status(message(err),true)));
 $("#copyInvite").addEventListener("click",copyPrivateInvite);
-if(!disabled())setVisible("loginSection");
+$("#registerForm").addEventListener("submit",registerForInvite);
+if(!disabled()){
+  setVisible("loginSection");
+  $("#registerPanel").hidden=!(inviteToken&&inviteId);
+}
 </script>
 </body>
 </html>
