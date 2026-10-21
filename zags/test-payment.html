@@ -60,7 +60,9 @@
   const result=await api({action:'init'});
   if(result.amount_kopecks!==1000)throw Error('Неверная сумма теста');
   const url=new URL(result.checkout_url);
-  if(url.protocol!=='https:'||!(url.hostname==='tinkoff.ru'||url.hostname.endsWith('.tinkoff.ru')))throw Error('Неверная ссылка банка');
+  const bankDomains=['tinkoff.ru','tbank.ru','tcsbank.ru'];
+  const bankHost=bankDomains.some(d=>url.hostname===d||url.hostname.endsWith('.'+d));
+  if(url.protocol!=='https:'||url.username||url.password||url.port||!bankHost)throw Error('Ссылка Т-Банка содержит неподтверждённый адрес: '+url.hostname);
   sessionStorage.setItem('zags-demo-checkout',JSON.stringify({order_id:result.order_id,payment_id:result.payment_id}));
   location.assign(url.href);
  });
