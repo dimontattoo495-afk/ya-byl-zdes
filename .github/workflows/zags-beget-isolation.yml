@@ -41,6 +41,10 @@ jobs:
         run: psql -v ON_ERROR_STOP=1 -f zags/beget/001_isolated_schema.sql
       - name: Check isolation, privacy and synthetic workflows
         run: psql -v ON_ERROR_STOP=1 -f zags/beget/ci/02_isolation_test.sql
+      - name: Stage two-user onboarding RPC with all payments disabled
+        run: psql -v ON_ERROR_STOP=1 -f zags/beget/002_onboarding_rpc.sql
+      - name: Exercise isolated user journey with simulated accounts
+        run: psql -v ON_ERROR_STOP=1 -f zags/beget/ci/03_onboarding_test.sql
       - name: Confirm second application fails closed without altering data
         run: |
           if psql -v ON_ERROR_STOP=1 -f zags/beget/001_isolated_schema.sql; then
