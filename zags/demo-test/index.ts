@@ -150,13 +150,24 @@ Deno.serve(async(req:Request)=>{
    }
    return reply({order_id:order,payment_id:String(response.PaymentId),amount_kopecks:amount,checkout_url:url.href});
   }
-  if(body.action==='check'){
+  if(body.action==='check'||body.action==='refund'){
    if(!validUUID(body.order_id)||typeof body.payment_id!=='string'||!/^\d{1,30}$/.test(body.payment_id))
     return reply({error:'Неверный идентификатор платежа'},400);
    const state=await bank('GetState',{PaymentId:body.payment_id});
    const order={payment_id:body.payment_id,order_id:body.order_id,amount};
    if(!verifiedState(state,order,terminal))return reply({error:'Сумма или реквизиты платежа не совпадают'},409);
-   return reply({status:state.Status,confirmed:state.Status==='CONFIRMED',amount_kopecks:amount,
+   if(body.action==='refund'){
+    if(state.Status==='REFUNDED')return reply({status:'REFUNDED',refunded:true,confirmed:false,amount_kopecks:amount,demo:true,real_money_charged:false});
+    if(state.Status==='REFUNDING')return reply({status:'REFUNDING',refunded:false,confirmed:false,amount_kopecks:amount,demo:true,real_money_charged:false});
+    if(state.Status!=='CONFIRMED')return reply({error:'Возврат возможен только после подтверждённой тестовой оплаты'},409);
+    // Full refund: bank automatically generates the return receipt from the original Init Receipt.
+    // Do not pass Receipt or Amount for a complete Cancel operation (T-Bank /v2/Cancel).
+    await bank('Cancel',{PaymentId:body.payment_id});
+    const after=await bank('GetState',{PaymentId:body.payment_id});
+    if(!verifiedState(after,order,terminal))return reply({error:'Не удалось проверить реквизиты тестового возврата'},409);
+    return reply({status:after.Status,refunded:after.Status==='REFUNDED',confirmed:false,amount_kopecks:amount,demo:true,real_money_charged:false});
+   }
+   return reply({status:state.Status,confirmed:state.Status==='CONFIRMED',refunded:state.Status==='REFUNDED',amount_kopecks:amount,
     demo:true,real_money_charged:false});
   }
   return reply({error:'Неизвестное действие'},400);
