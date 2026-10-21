@@ -14,9 +14,10 @@ DECLARE
 BEGIN
  INSERT INTO auth.users(id) VALUES (stranger);
 
- IF NOT has_function_privilege('authenticated','public.zags_v2_action(text,jsonb)','EXECUTE')
- OR NOT has_function_privilege('anon','public.zags_v2_action(text,jsonb)','EXECUTE')
- THEN RAISE EXCEPTION 'New onboarding RPC is not exposed through authenticated/anon PostgREST'; END IF;
+ IF has_function_privilege('authenticated','public.zags_v2_action(text,jsonb)','EXECUTE')
+ OR has_function_privilege('anon','public.zags_v2_action(text,jsonb)','EXECUTE')
+ OR NOT has_function_privilege('service_role','public.zags_v2_action(text,jsonb)','EXECUTE')
+ THEN RAISE EXCEPTION 'Staged onboarding RPC must remain hidden from public PostgREST clients'; END IF;
  IF has_table_privilege('authenticated','zags.couples','SELECT')
  THEN RAISE EXCEPTION 'New onboarding accidentally exposes private tables'; END IF;
 
