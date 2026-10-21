@@ -124,8 +124,10 @@ END $function$;
 
 REVOKE ALL ON FUNCTION public.zags_v2_action(text,jsonb)
  FROM PUBLIC,anon,authenticated,service_role;
+-- Fail closed: users cannot call this new RPC through the public PostgREST
+-- endpoint until the authorized Russian-hosting release is ready.
 GRANT EXECUTE ON FUNCTION public.zags_v2_action(text,jsonb)
- TO anon,authenticated;
+ TO service_role;
 COMMENT ON FUNCTION public.zags_v2_action(text,jsonb) IS
  'Staged isolated two-account invitation flow. No payments, public publication, or wedding actions.';
 COMMIT;
