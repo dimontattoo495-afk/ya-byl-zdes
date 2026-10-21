@@ -1,0 +1,20 @@
+name: ZAGS DEMO checkout safety
+on:
+  pull_request:
+    paths:
+      - 'zags/demo-test/**'
+      - 'zags/test-payment.html'
+      - 'zags/demo-test-check.cjs'
+      - '.github/workflows/zags-demo-gate.yml'
+  workflow_dispatch:
+jobs:
+  demo-safety:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node zags/demo-test-check.cjs
