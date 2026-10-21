@@ -34,6 +34,12 @@ assert.match(edge,/if\(state\.Status!=='CONFIRMED'\)/,'Refund requires a confirm
 assert.match(edge,/await bank\('Cancel',\{PaymentId:body\.payment_id\}\)/,'Refund must use full Cancel with no Amount or Receipt');
 assert.match(edge,/const after=await bank\('GetState',\{PaymentId:body\.payment_id\}\)/,'Refund must re-check state from bank');
 assert.match(edge,/verifiedDemoState\(after,order\)/,'Returned refund validates DEMO payment identity after Cancel');
+assert.match(edge,/state\.Amount==null/,'Refunded GetState may omit remaining Amount');
+assert.match(edge,/state\.Amount>=0&&state\.Amount<=order\.amount/,'Refunded remaining balance bounded by paid amount');
+assert.match(edge,/String\(state\.PaymentId\)!==String\(order\.payment_id\)/,'Refunded order must match PaymentId');
+assert.match(edge,/String\(state\.OrderId\)!==String\(order\.order_id\)/,'Refunded order must match OrderId');
+assert.match(edge,/state\.TerminalKey!==terminal/,'Refunded order must still match DEMO terminal');
+assert.match(edge,/return verifiedState\(state,order,terminal\)/,'CONFIRMED remains strictly checked for 1000 kopecks');
 assert.match(ui,/id="start-refund"/,'Test 8 uses separate initiated order');
 assert.match(ui,/id="refund"/,'Explicit user action needed for refund');
 assert.match(ui,/order\.purpose!=='refund'\|\|!order\.confirmed\|\|order\.refunded/,'No repeat or accidental refund action on test 7');
