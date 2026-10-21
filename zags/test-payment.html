@@ -9,7 +9,7 @@
 <h1>Проверка оплаты</h1>
 <div class="notice"><b>Тестовый терминал Т-Банка.</b> Сумма 10 ₽ условная — настоящие деньги не списываются. Работает только с тестовыми картами банка и разрешённым аккаунтом владельца проекта.</div>
 <p><strong class="price">10 ₽</strong><br>ТЕСТ: шуточная виртуальная свадебная церемония</p>
-<div id="login"><label for="email">Почта аккаунта ЗАГСа</label><input id="email" type="email" autocomplete="email">
+<div id="login"><p class="note">Для проверки войдите с адреса, который уже зарегистрирован в виртуальном ЗАГСе. Новая почта не сможет получить код — новые аккаунты на этой странице не создаются.</p><label for="email">Почта существующего аккаунта ЗАГСа</label><input id="email" type="email" autocomplete="email">
 <button id="send" type="button">Получить код</button></div>
 <div id="verify"><label for="otp">Код из письма</label><input id="otp" type="text" inputmode="numeric" autocomplete="one-time-code">
 <button id="check-otp" type="button">Войти</button></div>
@@ -49,7 +49,7 @@
  $('#send').onclick=()=>run(async()=>{
   email=$('#email').value.trim();if(!email)throw Error('Укажите почту');
   const {error}=await sb.auth.signInWithOtp({email,options:{shouldCreateUser:false}});
-  if(error)throw error;$('#login').style.display='none';$('#verify').style.display='block';out('Код отправлен');
+  if(error){if(/signups? not allowed for otp|signup.*not allowed|user not found/i.test(error.message||''))throw Error('Этот адрес не зарегистрирован в ЗАГСе или регистрация отключена. Укажите почту существующего аккаунта, с которой ранее создавали или принимали приглашение.');throw error;}$('#login').style.display='none';$('#verify').style.display='block';out('Код отправлен');
  });
  $('#check-otp').onclick=()=>run(async()=>{
   const {error}=await sb.auth.verifyOtp({email,token:$('#otp').value.trim(),type:'email'});
