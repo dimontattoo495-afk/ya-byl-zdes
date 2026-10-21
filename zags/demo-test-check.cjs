@@ -47,4 +47,8 @@ assert.match(ui,/action:'refund'/,'Client calls only isolated refund action');
 assert.match(ui,/order\.refunded=true;saveOrder\(order\)/,'Client records confirmed refund to prevent duplicate');
 assert.match(edge,/terminal\.toUpperCase\(\)\.includes\('DEMO'\)/,'Refund cannot reach non-demo terminal');
 assert.doesNotMatch(edge,/TBANK_PASSWORD\)/,'No production bank password in DEMO flow');
+assert.match(edge,/const DEMO_TEST_FINISHED=true/,'Bank DEMO server is permanently closed after tests');
+assert.match(edge,/return !DEMO_TEST_FINISHED && env\('ZAGS_DEMO_TESTS_ENABLED'\)==='true'/,'A stale secret cannot reopen bank DEMO');
+assert.match(ui,/const DEMO_TEST_FINISHED=true/,'Show users completed-test state');
+assert.match(ui,/Тестирование Т-Банка завершено/,'Display accurate closure message');
 console.log('PASS: DEMO-only 10 RUB, verified auth, checked GetState, receipt, no production writes');

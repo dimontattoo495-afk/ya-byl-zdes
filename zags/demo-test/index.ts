@@ -92,8 +92,11 @@ const allowed=env('ZAGS_DEMO_OPERATOR_ID').trim();
 const apiBase='https://securepay.tinkoff.ru/v2/';
 const amount=1000;
 const validUUID=(x:unknown)=>typeof x==='string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(x);
+// T-Bank tests 7 and 8 passed on 2026-10-21. Prevent new DEMO charges
+// independently of potentially stale project secrets. Reopen only by a reviewed code change.
+const DEMO_TEST_FINISHED=true;
 function ready(){
- return env('ZAGS_DEMO_TESTS_ENABLED')==='true' &&
+ return !DEMO_TEST_FINISHED && env('ZAGS_DEMO_TESTS_ENABLED')==='true' &&
   !!terminal && terminal.toUpperCase().includes('DEMO') &&
   terminal!==env('TBANK_TERMINAL_KEY') &&
   !!password && validUUID(allowed) &&
