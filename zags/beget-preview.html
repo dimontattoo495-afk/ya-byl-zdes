@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<title>Виртуальный ЗАГС — проверка российского API</title>
+<style>
+:root{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#3b3035;background:#f8f5f0}
+*{box-sizing:border-box}
+body{margin:0;padding:32px 16px}
+main{max-width:740px;margin:auto;background:#fff;border:1px solid #e7d7d1;border-radius:18px;padding:clamp(20px,4vw,42px);box-shadow:0 9px 36px #51372108}
+h1,h2{font-family:Georgia,"Times New Roman",serif;font-weight:normal;color:#834453}
+h1{font-size:clamp(30px,6vw,48px);margin:12px 0}h2{font-size:27px}
+p{line-height:1.6}.muted{color:#6e6663;font-size:14px}
+.notice{border-left:4px solid #b98748;background:#fff2de;padding:14px;margin:20px 0;line-height:1.5}
+fieldset{border:0;padding:0;margin:22px 0}label{display:block;margin:12px 0 6px;font-size:14px;font-weight:600}
+input,select{display:block;width:100%;border:1px solid #dacdc9;border-radius:7px;padding:12px;font:inherit;background:#fff}
+button{border:0;border-radius:8px;background:#834453;color:#fff;padding:12px 20px;cursor:pointer;font:inherit;margin:9px 8px 9px 0}
+button.secondary{background:#f2e9e7;color:#763f49}button:disabled{opacity:.5;cursor:default}
+section[hidden]{display:none}.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+small{line-height:1.5}.error{color:#a31d27}.ok{color:#21633f}
+#status{white-space:pre-wrap;overflow-wrap:anywhere;min-height:26px}#inviteOutput{overflow-wrap:anywhere}
+hr{border:0;border-top:1px solid #ede4e2;margin:24px 0}
+@media(max-width:560px){.row{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<main>
+<a href="./">← Виртуальный ЗАГС</a>
+<h1>Проверка российского ЗАГСа</h1>
+<p class="notice"><strong>Закрытая подготовительная версия.</strong> Здесь нет оплаты, регистрации брака и действующего свидетельства. Вход и создание заявлений не включены, пока на Beget не завершены проверка авторизации и разрешение доступа к тестовому API.</p>
+<section id="closed">
+<h2>Российская база установлена</h2>
+<p>На Beget создана приватная схема заявлений. Эта страница подготовлена для проверки двух отдельных аккаунтов. Пока используйте <a href="./">демонстрацию ЗАГСа</a> на основном сайте.</p>
+</section>
+<section id="loginSection" hidden>
+<h2>Войти для проверки</h2>
+<p class="muted">Для Beget используются отдельные учётные данные российского сервера. Пароль от облачного Supabase здесь не подходит.</p>
+<form id="loginForm">
+<label for="email">Почта</label><input id="email" type="email" required autocomplete="email" maxlength="254">
+<label for="password">Пароль</label><input id="password" type="password" required minlength="8" autocomplete="current-password">
+<button type="submit">Войти</button>
+</form>
+<p class="muted">Самостоятельную регистрацию отключаем до проверки настроек писем и согласий. Создание пользователей производится только через подтверждённый путь авторизации Beget.</p>
+</section>
+<section id="appSection" hidden>
+<p class="ok">Вход на российский сервер выполнен.</p>
+<p id="account"></p>
+<button class="secondary" id="logout" type="button">Выйти</button>
+<div id="invitationBox" hidden>
+<h2>Приглашение</h2>
+<p id="inviteInfo"></p>
+<form id="acceptForm">
+<label for="partnerName">Имя второго участника</label><input id="partnerName" required maxlength="60">
+<label><input id="acceptConsent" type="checkbox" required style="display:inline;width:auto"> Согласен(на) с условиями тестовой виртуальной церемонии</label>
+<button type="submit">Подтвердить приглашение</button>
+</form>
+</div>
+<hr>
+<h2>Новая тестовая заявка</h2>
+<form id="createForm">
+<div class="row"><div><label for="name1">Ваше имя</label><input id="name1" required maxlength="60"></div>
+<div><label for="name2">Имя партнёра</label><input id="name2" required maxlength="60"></div></div>
+<label for="family">Название вашей виртуальной семьи</label><input id="family" required maxlength="80">
+<label for="plan">Тариф (без оплаты)</label><select id="plan"><option value="basic">149 ₽ — базовый</option><option value="beautiful">299 ₽ — красивый</option><option value="party">499 ₽ — праздничный</option></select>
+<label><input id="createConsent" type="checkbox" required style="display:inline;width:auto"> Согласен(на) с условиями тестовой виртуальной церемонии</label>
+<button type="submit">Создать заявку без оплаты</button>
+</form>
+<p id="inviteOutput" class="muted"></p>
+<hr>
+<h2>Мои заявления</h2>
+<button id="refresh" type="button" class="secondary">Обновить список</button>
+<div id="couplesList" aria-live="polite"></div>
+</section>
+<p id="status" role="status" aria-live="polite"></p>
+<p class="muted">Официальный брак не регистрируется. Это развлекательный сервис «Я был здесь». Приёма платежей в тестовом интерфейсе нет.</p>
+</main>
+<script>
+"use strict";
+// Production flag deliberately disabled. Enabling needs a separate reviewed
+// release after local Beget Auth, endpoint/CORS, privacy, consent and SQL GRANT QA.
+const PREVIEW_ENABLED=false;
+const API_BASE="https://api.smoke-tattoo.ru";
+const ANON_KEY=""; // Set from a verified PUBLIC Supabase anon key in protected release.
+const $=s=>document.querySelector(s);
+const state={access:null,refresh:null,expires:0,user:null};
+let inviteToken="",inviteId="";
+const q=new URLSearchParams(location.search);
+const h=new URLSearchParams(location.hash.slice(1));
+if(q.has("couple") && h.has("invite")){
+  inviteId=q.get("couple")||"";
+  inviteToken=h.get("invite")||"";
+  // Invite token is in fragment only, never sent as an HTTP Referer.
+  history.replaceState(null,"",location.pathname);
+}
+function status(t,isError=false){const node=$("#status");node.textContent=String(t||"");node.className=isError?"error":"ok"}
+function message(err){return String(err&&err.message||err||"Ошибка").slice(0,250)}
+function disabled(){return !PREVIEW_ENABLED||!ANON_KEY||!API_BASE.startsWith("https://")}
+async function send(path,{method="GET",token=null,body=null}={}){
+  if(disabled())throw Error("Проверочный API ЗАГСа пока выключен");
+  const headers={"apikey":ANON_KEY};
+  if(token)headers.Authorization="Bearer "+token;
+  if(body!==null)headers["Content-Type"]="application/json";
+  const controller=new AbortController();
+  const timeout=setTimeout(()=>controller.abort(),12000);
+  try{
+    const r=await fetch(API_BASE+path,{method,headers,body:body===null?undefined:JSON.stringify(body),signal:controller.signal,cache:"no-store"});
+    let data;
+    try{data=await r.json()}catch{data={}}
+    if(!r.ok)throw Error(data.message||data.msg||data.error_description||data.error||"Ошибка HTTP "+r.status);
+    return data;
+  }finally{clearTimeout(timeout)}
+}
+function saveSession(data){
+  if(!data||!data.access_token||!data.user||!data.user.id)throw Error("Сервер не вернул действующую сессию");
+  state.access=data.access_token;
+  state.refresh=data.refresh_token||null;
+  state.user=data.user;
+  state.expires=Date.now()+Number(data.expires_in||3600)*1000;
+  // Session memory only. Do not persist auth/refresh tokens in URL/localStorage.
+}
+async function jwt(){
+  if(!state.access)throw Error("Сначала войдите");
+  if(Date.now()+45000<state.expires)return state.access;
+  if(!state.refresh)throw Error("Сессия закончилась. Войдите снова");
+  const data=await send("/auth/v1/token?grant_type=refresh_token",{method:"POST",body:{refresh_token:state.refresh}});
+  saveSession(data);
+  return state.access;
+}
+async function rpc(action,data){
+  return send("/rest/v1/rpc/zags_v2_action",{method:"POST",token:await jwt(),body:{p_action:action,p_data:data||{}}});
+}
+function makeButton(label,click){
+  const b=document.createElement("button");b.type="button";b.textContent=label;b.className="secondary";b.addEventListener("click",click);return b;
+}
+function setVisible(section){for(const s of ["closed","loginSection","appSection"])$("#"+s).hidden=s!==section}
+async function login(ev){
+  ev.preventDefault();status("Выполняется вход...");
+  try{
+    const data=await send("/auth/v1/token?grant_type=password",{method:"POST",
+      body:{email:$("#email").value.trim(),password:$("#password").value}});
+    saveSession(data);$("#password").value="";setVisible("appSection");
+    $("#account").textContent="Аккаунт: "+state.user.email;
+    await refresh();if(inviteToken)await showInvite();
+    status("Вход выполнен");
+  }catch(err){status(message(err),true)}
+}
+async function showInvite(){
+  if(!inviteToken||!inviteId)return;
+  const data=await rpc("invitation",{id:inviteId,token:inviteToken});
+  $("#inviteInfo").textContent="Вас приглашают: "+data.name1+" и "+data.name2+" — "+data.family;
+  $("#invitationBox").hidden=false;
+}
+async function accept(ev){
+  ev.preventDefault();
+  try{
+    await rpc("accept",{id:inviteId,token:inviteToken,name:$("#partnerName").value.trim(),consent:$("#acceptConsent").checked});
+    inviteToken="";inviteId="";$("#invitationBox").hidden=true;
+    await refresh();status("Приглашение подтверждено (оплаты нет)");
+  }catch(err){status(message(err),true)}
+}
+async function create(ev){
+  ev.preventDefault();
+  try{
+    const data=await rpc("create",{name1:$("#name1").value.trim(),name2:$("#name2").value.trim(),
+      family:$("#family").value.trim(),plan:$("#plan").value,consent:$("#createConsent").checked});
+    const u=new URL(location.href);
+    u.searchParams.set("couple",data.id);
+    u.hash="invite="+data.token;
+    $("#inviteOutput").textContent="Передайте партнёру ссылку лично (содержит секрет приглашения): "+u.href;
+    await refresh();status("Создано тестовое заявление. Деньги не списывались.");
+  }catch(err){status(message(err),true)}
+}
+async function refresh(){
+  const list=await rpc("list",{});
+  const target=$("#couplesList");target.replaceChildren();
+  if(!Array.isArray(list)||!list.length){target.textContent="Заявлений пока нет";return}
+  for(const c of list){
+    const p=document.createElement("p");
+    p.textContent=c.family+" — "+(c.married_at?"дата церемонии: "+c.married_at:"ожидает продолжения");
+    p.appendChild(makeButton("Посмотреть",async()=>{
+      try{const d=await rpc("get",{id:c.id});
+        status("Заявление: "+d.name1+" и "+d.name2+"; статус: "+d.payment_status+"; партнёр: "+(d.has_partner?"да":"нет"));
+      }catch(err){status(message(err),true)}
+    }));
+    target.appendChild(p);
+  }
+}
+function logout(){
+  const token=state.access;state.access=null;state.refresh=null;state.user=null;state.expires=0;
+  setVisible(disabled()?"closed":"loginSection");
+  if(token)send("/auth/v1/logout",{method:"POST",token}).catch(()=>{});
+  status("Вы вышли");
+}
+$("#loginForm").addEventListener("submit",login);
+$("#createForm").addEventListener("submit",create);
+$("#acceptForm").addEventListener("submit",accept);
+$("#logout").addEventListener("click",logout);
+$("#refresh").addEventListener("click",()=>refresh().catch(err=>status(message(err),true)));
+if(!disabled())setVisible("loginSection");
+</script>
+</body>
+</html>
