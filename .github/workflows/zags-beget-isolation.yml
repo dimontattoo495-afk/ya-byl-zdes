@@ -33,6 +33,8 @@ jobs:
       PGPASSWORD: local-ci-test-only
     steps:
       - uses: actions/checkout@v4
+      - name: Validate read-only backup inventory script syntax
+        run: bash -n zags/beget/readonly-storage-inventory.sh
       - name: Verify temporary PostgreSQL
         run: psql -c "SELECT current_setting('server_version');"
       - name: Prepare synthetic accounts and TATTOO PRICE sentinel
