@@ -38,6 +38,7 @@ jobs:
           bash -n zags/beget/readonly-storage-inventory.sh
           bash -n zags/beget/install-private-zags.sh
           bash -n zags/beget/readonly-auth-readiness.sh
+          bash -n zags/beget/install-private-beta.sh
       - name: Verify temporary PostgreSQL
         run: psql -c "SELECT current_setting('server_version');"
       - name: Prepare synthetic accounts and TATTOO PRICE sentinel
