@@ -46,11 +46,11 @@ jobs:
         run: |
           set -eo pipefail
           {
-            printf 'BEGIN;\\n'
+            printf 'BEGIN;\n'
             for file in zags/beget/001_isolated_schema.sql zags/beget/002_onboarding_rpc.sql; do
               sed -e '/^BEGIN;$/d' -e '/^COMMIT;$/d' "$file"
             done
-            printf '\\nCOMMIT;\\n'
+            printf '\nCOMMIT;\n'
           } | psql -v ON_ERROR_STOP=1
       - name: Check isolation, privacy and synthetic workflows
         run: psql -v ON_ERROR_STOP=1 -f zags/beget/ci/02_isolation_test.sql
