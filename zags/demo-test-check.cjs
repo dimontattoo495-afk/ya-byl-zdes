@@ -14,6 +14,6 @@ assert.doesNotMatch(edge,/zags_couples|zags_payment\(|payment_status\s*[:=]\s*['
 assert.match(ui,/zags-payment-demo/,'UI must only call isolated function');
 assert.match(ui,/result\.amount_kopecks!==1000/,'UI checks received test quote');
 assert.match(ui,/Тестовый терминал/,'Clear test mode message');
-assert.match(ui,/реального списания не было/,'Must disclose no real charge');
+assert.match(ui,/реального списания не было/i,'Must disclose no real charge');
 assert.doesNotMatch(ui,/paymentsEnabled:true/);
 console.log('PASS: DEMO-only 10 RUB, verified auth, checked GetState, receipt, no production writes');
