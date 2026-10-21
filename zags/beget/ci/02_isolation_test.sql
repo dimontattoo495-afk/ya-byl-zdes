@@ -33,7 +33,7 @@ BEGIN
  RETURNING id INTO v_couple_id;
  IF (SELECT payment_status FROM zags.couples WHERE id=v_couple_id)!='unpaid'
  THEN RAISE EXCEPTION 'Orders must initially be unpaid'; END IF;
- IF (SELECT share1 OR share2 OR news1 OR news2 FROM zags.couples WHERE id=couple_id)
+ IF (SELECT share1 OR share2 OR news1 OR news2 FROM zags.couples WHERE id=v_couple_id)
  THEN RAISE EXCEPTION 'Private couple exposed by default'; END IF;
  BEGIN
    INSERT INTO zags.couples(creator,partner,name1,name2,family,plan,invite_hash)
@@ -41,7 +41,7 @@ BEGIN
    RAISE EXCEPTION 'Self-partnership unexpectedly accepted';
  EXCEPTION WHEN check_violation THEN NULL; END;
  BEGIN
-   UPDATE zags.couples SET married_at=now() WHERE id=couple_id;
+   UPDATE zags.couples SET married_at=now() WHERE id=v_couple_id;
    RAISE EXCEPTION 'Ceremony without two yes accepted';
  EXCEPTION WHEN check_violation THEN NULL; END;
  INSERT INTO zags.wishes(couple_id,author,name,message)
