@@ -87,6 +87,9 @@ AND (SELECT count(*) FROM zags.wishes)=0
 AND NOT has_table_privilege('authenticated','zags.couples','SELECT')
 AND NOT has_schema_privilege('anon','zags','USAGE')
 AND NOT has_schema_privilege('authenticated','zags','USAGE')
+AND NOT has_function_privilege('anon','public.zags_v2_action(text,jsonb)','EXECUTE')
+AND NOT has_function_privilege('authenticated','public.zags_v2_action(text,jsonb)','EXECUTE')
+AND has_function_privilege('service_role','public.zags_v2_action(text,jsonb)','EXECUTE')
 THEN 'PASS' ELSE 'FAIL' END;"
 result="$(docker exec supabase-db psql -qAt -v ON_ERROR_STOP=1 -U postgres -d postgres -c "$verify_sql")" \
   || fail "Could not verify installation"
