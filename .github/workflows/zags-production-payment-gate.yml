@@ -4,6 +4,7 @@ on:
     paths:
       - 'zags/production-payment/**'
       - 'zags/production-payment-check.cjs'
+      - 'zags/production-payment-contract-check.mjs'
       - '.github/workflows/zags-production-payment-gate.yml'
       - 'zags/index.html'
   workflow_dispatch:
@@ -18,3 +19,4 @@ jobs:
         with:
           node-version: '22'
       - run: node zags/production-payment-check.cjs
+      - run: node zags/production-payment-contract-check.mjs
