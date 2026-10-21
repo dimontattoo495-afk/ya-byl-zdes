@@ -46,6 +46,8 @@ jobs:
           bash -n zags/beget/install-private-beta.sh
           bash -n zags/beget/approve-owner-test.sh
           bash -n zags/beget/approve-second-tester.sh
+      - name: Validate privacy-safe SMTP diagnostic syntax
+        run: python3 -m py_compile zags/beget/readonly-smtp-diagnose.py
       - name: Verify temporary PostgreSQL
         run: psql -c "SELECT current_setting('server_version');"
       - name: Prepare synthetic accounts and TATTOO PRICE sentinel
