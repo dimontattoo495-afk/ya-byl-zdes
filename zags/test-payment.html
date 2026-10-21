@@ -13,7 +13,11 @@
 <button id="send" type="button">Получить код</button></div>
 <div id="verify"><label for="otp">Код из письма</label><input id="otp" type="text" inputmode="numeric" autocomplete="one-time-code">
 <button id="check-otp" type="button">Войти</button></div>
-<div id="paybox"><p id="identity" class="note"></p><button id="start" type="button">Открыть тестовую форму Т-Банка</button><button id="check" type="button">Проверить статус операции</button>
+<div id="paybox"><p id="identity" class="note"></p><button id="start" type="button">Открыть тестовую форму Т-Банка</button> <button id="check" type="button">Проверить статус операции</button>
+<div id="returntest" style="display:none"><hr><h2>Тест №8 — чек возврата</h2><p>Тест №7 завершён. Создайте <b>новую тестовую оплату</b> на 10 ₽, используя исключительно карту, указанную в тесте №8 кабинета Т-Банка. После подтверждения нового платежа появится кнопка возврата.</p>
+<button id="start-refund" type="button">Начать тест №8: новая оплата</button></div>
+<div id="refunda" style="display:none"><hr><h2>Возврат тестовой оплаты</h2><p>Этот платёж подтверждён тестовым банком. Нажмите кнопку для полного возврата 10 ₽. Т-Банк должен сформировать чек возврата автоматически.</p>
+<button id="refund" type="button">Вернуть тестовые 10 ₽</button></div>
 <p class="note">После возврата из банка будет показан статус, подтверждённый методом GetState. Настоящий статус оплаты пары в базе не меняется.</p></div>
 <div id="status" role="status" aria-live="polite"></div>
 <p class="note">Вся процедура ограничена изолированным тестом. Отдельно перед запуском проверяется отправка электронного чека в кабинете «Чеки Т-Бизнеса».</p></main>
@@ -38,13 +42,29 @@
   $('#verify').style.display='none';
   $('#paybox').style.display=session?'block':'none';
   if(session)$('#identity').textContent='Вход: '+(session.user.email||'подтверждён');
-  if(session&&new URLSearchParams(location.search).has('return'))await checkPayment();
+  if(session&&sessionStorage.getItem('zags-demo-checkout'))await checkPayment();
  }
+ const loadOrder=()=>JSON.parse(sessionStorage.getItem('zags-demo-checkout')||'null');
+ const hideFollowups=()=>{$('#returntest').style.display='none';$('#refunda').style.display='none';};
+ const saveOrder=o=>sessionStorage.setItem('zags-demo-checkout',JSON.stringify(o));
  async function checkPayment(){
-  const state=JSON.parse(sessionStorage.getItem('zags-demo-checkout')||'null');
-  if(!state){out('Тестовый заказ не найден в этом браузере. Создайте новый тест только при необходимости.');return;}
-  const result=await api({action:'check',order_id:state.order_id,payment_id:state.payment_id});
-  out(result.confirmed?'ТЕСТ УСПЕШЕН: банк подтвердил 10 ₽ в тестовой среде. Реального списания не было.':'Статус тестового платежа: '+result.status+'. Деньги не списаны.');
+  hideFollowups();
+  const order=loadOrder();
+  if(!order){out('Тестовый заказ не найден в этом браузере. Создайте новый тест только при необходимости.');return;}
+  const result=await api({action:'check',order_id:order.order_id,payment_id:order.payment_id});
+  if(result.refunded){
+   order.refunded=true;saveOrder(order);
+   out('ТЕСТ ВОЗВРАТА УСПЕШЕН: Т-Банк подтвердил полный возврат условных 10 ₽. Проверьте тест №8 в Т-Бизнесе.');
+  }else if(result.confirmed){
+   order.confirmed=true;saveOrder(order);
+   if(order.purpose==='refund'){
+    $('#refunda').style.display='block';
+    out('ТЕСТ №8: новая оплата 10 ₽ подтверждена. Теперь выполните возврат кнопкой ниже.');
+   }else{
+    $('#returntest').style.display='block';
+    out('ТЕСТ №7 УСПЕШЕН: оплата 10 ₽ подтверждена. Реального списания не было. Можно начать тест №8.');
+   }
+  }else out('Статус тестового платежа: '+result.status+'. При обработке возврата повторите проверку статуса чуть позже.');
  }
  $('#send').onclick=()=>run(async()=>{
   email=$('#email').value.trim();if(!email)throw Error('Укажите почту');
@@ -55,16 +75,28 @@
   const {error}=await sb.auth.verifyOtp({email,token:$('#otp').value.trim(),type:'email'});
   if(error)throw error;await state();
  });
- $('#start').onclick=()=>run(async()=>{
-  if(sessionStorage.getItem('zags-demo-checkout'))throw Error('В этом браузере уже есть тестовый заказ. Проверьте его статус, прежде чем начинать новый.');
+ async function createTestOrder(purpose){
+  const existing=loadOrder();
+  if(purpose==='refund'){
+   if(!existing||!existing.confirmed||existing.purpose==='refund'||existing.refunded)throw Error('Сначала подтвердите успешный тест №7.');
+  }else if(existing)throw Error('В этом браузере уже есть тестовый заказ. Проверьте его статус.');
   const result=await api({action:'init'});
   if(result.amount_kopecks!==1000)throw Error('Неверная сумма теста');
   const url=new URL(result.checkout_url);
   const bankDomains=['tinkoff.ru','tbank.ru','tcsbank.ru'];
   const bankHost=url.hostname==='pay.tbank-online.com'||bankDomains.some(d=>url.hostname===d||url.hostname.endsWith('.'+d));
   if(url.protocol!=='https:'||url.username||url.password||url.port||!bankHost)throw Error('Ссылка Т-Банка содержит неподтверждённый адрес: '+url.hostname);
-  sessionStorage.setItem('zags-demo-checkout',JSON.stringify({order_id:result.order_id,payment_id:result.payment_id}));
+  saveOrder({order_id:result.order_id,payment_id:result.payment_id,purpose,confirmed:false,refunded:false});
   location.assign(url.href);
+ }
+ $('#start').onclick=()=>run(()=>createTestOrder('sale'));
+ $('#start-refund').onclick=()=>run(()=>createTestOrder('refund'));
+ $('#refund').onclick=()=>run(async()=>{
+  const order=loadOrder();
+  if(!order||order.purpose!=='refund'||!order.confirmed||order.refunded)throw Error('Нет подтверждённого тестового платежа №8.');
+  const result=await api({action:'refund',order_id:order.order_id,payment_id:order.payment_id});
+  if(result.refunded){order.refunded=true;saveOrder(order);hideFollowups();out('ТЕСТ №8: возврат подтверждён! Нажмите «Проверить» в кабинете Т-Банка для проверки чека возврата.');}
+  else {hideFollowups();out('Т-Банк обрабатывает возврат: '+result.status+'. Нажмите «Проверить статус операции» чуть позже.');}
  });
  $('#check').onclick=()=>run(checkPayment);
  state().catch(e=>out(e.message||'Ошибка входа'));

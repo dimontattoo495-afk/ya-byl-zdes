@@ -29,4 +29,16 @@ assert.match(ui,/result\.amount_kopecks!==1000/,'UI checks received test quote')
 assert.match(ui,/Тестовый терминал/,'Clear test mode message');
 assert.match(ui,/реального списания не было/i,'Must disclose no real charge');
 assert.doesNotMatch(ui,/paymentsEnabled:true/);
+assert.match(edge,/body\.action==='check'\|\|body\.action==='refund'/,'Refund shares validated bank payment lookup');
+assert.match(edge,/if\(state\.Status!=='CONFIRMED'\)/,'Refund requires a confirmed DEMO payment');
+assert.match(edge,/await bank\('Cancel',\{PaymentId:body\.payment_id\}\)/,'Refund must use full Cancel with no Amount or Receipt');
+assert.match(edge,/const after=await bank\('GetState',\{PaymentId:body\.payment_id\}\)/,'Refund must re-check state from bank');
+assert.match(edge,/verifiedState\(after,order,terminal\)/,'Returned refund must match the original DEMO order and 10 RUB amount');
+assert.match(ui,/id="start-refund"/,'Test 8 uses separate initiated order');
+assert.match(ui,/id="refund"/,'Explicit user action needed for refund');
+assert.match(ui,/order\.purpose!=='refund'\|\|!order\.confirmed\|\|order\.refunded/,'No repeat or accidental refund action on test 7');
+assert.match(ui,/action:'refund'/,'Client calls only isolated refund action');
+assert.match(ui,/order\.refunded=true;saveOrder\(order\)/,'Client records confirmed refund to prevent duplicate');
+assert.match(edge,/terminal\.toUpperCase\(\)\.includes\('DEMO'\)/,'Refund cannot reach non-demo terminal');
+assert.doesNotMatch(edge,/TBANK_PASSWORD\)/,'No production bank password in DEMO flow');
 console.log('PASS: DEMO-only 10 RUB, verified auth, checked GetState, receipt, no production writes');
