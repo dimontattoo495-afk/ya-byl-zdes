@@ -1,4 +1,5 @@
 name: ZAGS Beget isolation dry-run
+# Verify invite-only second-account registration without payment or public ZAGS entitlement.
 # Includes second-participant permission and exposed invite-token rotation regression tests.
 on:
   pull_request:
