@@ -75,6 +75,8 @@ jobs:
           fi
       - name: Guard independent Russian ZAGS UI remains disabled and payment-free
         run: node zags/beget-preview-static-check.cjs
+      - name: Validate owner-only hosted Beget beta remains payment-free
+        run: node zags/beget-private-beta-check.cjs
       - name: Confirm second application fails closed without altering data
         run: |
           if psql -v ON_ERROR_STOP=1 -f zags/beget/001_isolated_schema.sql; then
