@@ -1,4 +1,5 @@
--- OPTIONAL PHASE-2 RELEASE, NOT YET INSTALLED ON LIVE BEGET.
+-- PHASE-2 RELEASE: installed on live Beget by owner 2026-10-21 (installer PASS).
+-- DO NOT REAPPLY: guard intentionally refuses a second installation.
 -- Grants access only to authenticated AND explicitly allowlisted testers.
 -- Starts with ZERO approved users; all requests are refused until owner approval.
 -- Never change TATTOO PRICE tables, main Supabase Auth or T-Bank payment functions.
