@@ -12,6 +12,13 @@ assert.match(edge,/Receipt:\{Email:user\.email/,'Receipt must use verified purch
 assert.match(edge,/https:\/\/securepay\.tinkoff\.ru\/v2\//,'DEMO terminals use normal bank API URL');
 assert.doesNotMatch(edge,/zags_couples|zags_payment\(|payment_status\s*[:=]\s*['"]paid/,'Test cannot unlock real wedding');
 assert.match(ui,/zags-payment-demo/,'UI must only call isolated function');
+assert.ok(edge.includes("url.hostname==='pay.tbank-online.com'||bankDomains.some("),'Server permits the precise checkout hostname returned by bank Init');
+assert.ok(ui.includes("url.hostname==='pay.tbank-online.com'||bankDomains.some("),'Browser and server require the same exact host');
+const bankHosts=['tinkoff.ru','tbank.ru','tcsbank.ru'];
+const isTrustedCheckoutHost=(host)=>host==='pay.tbank-online.com'||bankHosts.some(d=>host===d||host.endsWith('.'+d));
+assert.ok(isTrustedCheckoutHost('pay.tbank-online.com'));
+for (const hostname of ['notpay.tbank-online.com','attacker.tbank-online.com','pay.tbank-online.com.evil.tld','pay-tbank-online.com','evilpay.tbank-online.com']) assert.ok(!isTrustedCheckoutHost(hostname),'Reject lookalike '+hostname);
+
 assert.match(edge,/bankDomains=\['tinkoff\.ru','tbank\.ru','tcsbank\.ru'\]/,'Bank URLs must have allowlisted official parent domains');
 assert.match(edge,/url\.protocol!==['"]https:['"]\|\|url\.username\|\|url\.password\|\|url\.port\|\|!bankHost/,'Server requires https, no credentials, no nonstandard port and official host');
 assert.match(ui,/bankDomains=\['tinkoff\.ru','tbank\.ru','tcsbank\.ru'\]/,'Client must use same bank domain families');
