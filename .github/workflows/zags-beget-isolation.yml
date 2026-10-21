@@ -3,6 +3,9 @@ on:
   pull_request:
     paths:
       - 'zags/beget/**'
+      - 'zags/private-beget-beta.html'
+      - 'zags/private-beget-privacy.html'
+      - 'zags/beget-private-beta-check.cjs'
       - '.github/workflows/zags-beget-isolation.yml'
   workflow_dispatch:
 
@@ -40,6 +43,7 @@ jobs:
           bash -n zags/beget/readonly-auth-readiness.sh
           bash -n zags/beget/install-private-beta.sh
           bash -n zags/beget/approve-owner-test.sh
+          bash -n zags/beget/approve-second-tester.sh
       - name: Verify temporary PostgreSQL
         run: psql -c "SELECT current_setting('server_version');"
       - name: Prepare synthetic accounts and TATTOO PRICE sentinel
@@ -71,6 +75,15 @@ jobs:
           psql -v ON_ERROR_STOP=1 -qAt -c "SELECT CASE WHEN count(*)=1 THEN 'PASS' ELSE 'FAIL' END FROM zags.preview_testers WHERE enabled AND expires_at>now()" | grep -qx PASS
           if psql -v ON_ERROR_STOP=1 -v owner_email='unverified@example.invalid' -f zags/beget/005_approve_existing_owner.sql; then
             echo "ERROR: duplicate or unverified account approved"
+            exit 1
+          fi
+      - name: Test granting one different confirmed partner, preserving owner
+        run: |
+          psql -v ON_ERROR_STOP=1 -c "UPDATE auth.users SET email='second-partner@example.invalid',email_confirmed_at=now() WHERE id='22222222-2222-4222-8222-222222222222'"
+          psql -v ON_ERROR_STOP=1 -v partner_email='second-partner@example.invalid' -f zags/beget/006_approve_second_tester.sql
+          psql -v ON_ERROR_STOP=1 -qAt -c "SELECT CASE WHEN count(*)=2 THEN 'PASS' ELSE 'FAIL' END FROM zags.preview_testers WHERE enabled AND expires_at>now()" | grep -qx PASS
+          if psql -v ON_ERROR_STOP=1 -v partner_email='confirmed-owner@example.invalid' -f zags/beget/006_approve_second_tester.sql; then
+            echo "ERROR: second tester script allowed a duplicate"
             exit 1
           fi
       - name: Guard independent Russian ZAGS UI remains disabled and payment-free
