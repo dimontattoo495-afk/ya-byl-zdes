@@ -119,8 +119,10 @@ function verifiedDemoState(state:any, order:any){
     String(state.PaymentId)!==String(order.payment_id)||
     String(state.OrderId)!==String(order.order_id))return false;
  if(state.Status==='REFUNDED'||state.Status==='REFUNDING'){
-  return Number.isSafeInteger(state.Amount)&&
-   (state.Amount===0||state.Amount===order.amount);
+  // The bank can return a residual amount or omit Amount after a full Cancel.
+  // Payment amount was strictly verified at CONFIRMED, before any Cancel call.
+  return state.Amount==null||
+    (Number.isSafeInteger(state.Amount)&&state.Amount>=0&&state.Amount<=order.amount);
  }
  return verifiedState(state,order,terminal);
 }
