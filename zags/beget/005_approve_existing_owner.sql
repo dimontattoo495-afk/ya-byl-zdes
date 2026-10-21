@@ -5,8 +5,8 @@
 -- No new auth.users, TATTOO PRICE roles/tables, SMTP or public ZAGS config changed.
 \set ON_ERROR_STOP on
 BEGIN;
-SELECT pg_advisory_xact_lock(hashtextextended('zags:private-beta-owner',0));
-SELECT set_config('zags.owner_email',:'owner_email',true);
+SELECT pg_advisory_xact_lock(hashtextextended('zags:private-beta-owner',0)) AS lock_acquired \gset
+SELECT set_config('zags.owner_email',:'owner_email',true) AS confidential_email \gset
 DO $approve$
 DECLARE
   account_id uuid;
