@@ -1,4 +1,5 @@
 name: ZAGS Beget isolation dry-run
+# Includes second-participant permission and exposed invite-token rotation regression tests.
 on:
   pull_request:
     paths:
