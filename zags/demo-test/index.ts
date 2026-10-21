@@ -143,7 +143,7 @@ Deno.serve(async(req:Request)=>{
     return reply({error:'Неверные параметры ответа банка'},502);
    const url=new URL(String(response.PaymentURL));
    const bankDomains=['tinkoff.ru','tbank.ru','tcsbank.ru'];
-   const bankHost=bankDomains.some(d=>url.hostname===d||url.hostname.endsWith('.'+d));
+   const bankHost=url.hostname==='pay.tbank-online.com'||bankDomains.some(d=>url.hostname===d||url.hostname.endsWith('.'+d));
    if(url.protocol!=='https:'||url.username||url.password||url.port||!bankHost){
      console.warn('ZAGS DEMO: bank checkout rejected: hostname',url.hostname);
      return reply({error:'Неподтверждённый адрес платёжной формы Т-Банка: '+url.hostname},502);
