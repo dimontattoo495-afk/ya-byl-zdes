@@ -50,6 +50,28 @@ jobs:
         run: python3 -m py_compile zags/beget/readonly-smtp-diagnose.py
       - name: Check Yandex SMTP safe connection probe syntax
         run: python3 -m py_compile zags/beget/test-yandex-smtp.py
+      - name: Check no-email synthetic test account code before Beget use
+        run: |
+          python3 -m py_compile zags/beget/create-synthetic-partner.py
+          python3 -m py_compile zags/beget/cleanup-synthetic-partner.py
+          python3 - <<'PY'
+          import pathlib
+          s=pathlib.Path('zags/beget/create-synthetic-partner.py').read_text()
+          clean=pathlib.Path('zags/beget/cleanup-synthetic-partner.py').read_text()
+          assert 'email_confirm":True' in s
+          assert 'example.invalid' in s
+          assert 'zags.preview_testers' in s
+          assert "interval '90 minutes'" in s
+          assert '"tattoo-price-2026-10-21.dump"' in s
+          assert 'supabase-auth' in s
+          assert 'urllib.request' in s and 'SMTP_' not in s
+          assert 'STATE.unlink()' in clean
+          assert 'DELETE FROM zags.couples' in clean
+          assert 'DELETE FROM zags.preview_testers' in clean
+          assert 'DELETE FROM public.tp_' not in clean
+          assert 'DELETE FROM auth.users' not in clean
+          print("PASS synthetic user admin/auth guard, expires beta and reversible cleanup")
+          PY
       - name: Verify temporary PostgreSQL
         run: psql -c "SELECT current_setting('server_version');"
       - name: Prepare synthetic accounts and TATTOO PRICE sentinel
