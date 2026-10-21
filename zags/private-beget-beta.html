@@ -68,7 +68,8 @@ hr{border:0;border-top:1px solid #ede4e2;margin:24px 0}
 <label><input id="createConsent" type="checkbox" required style="display:inline;width:auto"> Согласен(на) с <a href="private-beget-privacy.html" target="_blank" rel="noopener">условиями обработки данных закрытого теста</a></label>
 <button type="submit">Создать заявку без оплаты</button>
 </form>
-<p id="inviteOutput" class="muted"></p>
+<p id="inviteOutput" class="muted" aria-live="polite"></p>
+<button id="copyInvite" class="secondary" type="button" hidden>Скопировать новую ссылку партнёру</button>
 <hr>
 <h2>Мои заявления</h2>
 <button id="refresh" type="button" class="secondary">Обновить список</button>
@@ -86,7 +87,7 @@ const API_BASE="https://api.smoke-tattoo.ru";
 const ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg5MzcwNTUxLCJleHAiOjE5NDcwNTA1NTF9.b3yB8Ttu1enWRfrZqUzMdVmEQV_0gI2MOhWyVPm76Ik"; // Public anon JWT, shared by existing TATTOO PRICE frontend; NOT a service key.
 const $=s=>document.querySelector(s);
 const state={access:null,refresh:null,expires:0,user:null};
-let inviteToken="",inviteId="";
+let inviteToken="",inviteId="",latestPrivateInvite="";
 const q=new URLSearchParams(location.search);
 const h=new URLSearchParams(location.hash.slice(1));
 if(q.has("couple") && h.has("invite")){
@@ -161,15 +162,35 @@ async function accept(ev){
     await refresh();status("Приглашение подтверждено (оплаты нет)");
   }catch(err){status(message(err),true)}
 }
+function rememberPrivateInvite(data){
+  if(!data||!data.id||!data.token)throw Error("Сервер не вернул ссылку приглашения");
+  const u=new URL("/zags/private-beget-beta.html",location.origin);
+  u.searchParams.set("couple",data.id);
+  u.hash="invite="+data.token;
+  latestPrivateInvite=u.href;
+  $("#inviteOutput").textContent="Новая ссылка готова. Она содержит секрет, поэтому не показывается на экране; используйте кнопку копирования и отправьте партнёру лично.";
+  $("#copyInvite").hidden=false;
+}
+async function copyPrivateInvite(){
+  if(!latestPrivateInvite)return status("Сначала создайте или обновите приглашение",true);
+  try{await navigator.clipboard.writeText(latestPrivateInvite);status("Новая ссылка скопирована. Отправьте её партнёру лично.")}
+  catch{status("Браузер не разрешил копирование. Разрешите доступ к буферу обмена.",true)}
+}
+async function renewPrivateInvite(id){
+  try{
+    const d=await rpc("get",{id});
+    if(d.role!==1||d.has_partner||d.payment_status!=="unpaid")throw Error("Заменить ссылку может только создатель непринятого заявления");
+    const renewed=await rpc("renew",{id});
+    rememberPrivateInvite(renewed);
+    status("Секрет приглашения заменён. Старая ссылка больше не действует.");
+  }catch(err){status(message(err),true)}
+}
 async function create(ev){
   ev.preventDefault();
   try{
     const data=await rpc("create",{name1:$("#name1").value.trim(),name2:$("#name2").value.trim(),
       family:$("#family").value.trim(),plan:$("#plan").value,consent:$("#createConsent").checked});
-    const u=new URL(location.href);
-    u.searchParams.set("couple",data.id);
-    u.hash="invite="+data.token;
-    $("#inviteOutput").textContent="Передайте партнёру ссылку лично (содержит секрет приглашения): "+u.href;
+    rememberPrivateInvite(data);
     await refresh();status("Создано тестовое заявление. Деньги не списывались.");
   }catch(err){status(message(err),true)}
 }
@@ -185,11 +206,13 @@ async function refresh(){
         status("Заявление: "+d.name1+" и "+d.name2+"; статус: "+d.payment_status+"; партнёр: "+(d.has_partner?"да":"нет"));
       }catch(err){status(message(err),true)}
     }));
+    p.appendChild(makeButton("Заменить ссылку приглашения",()=>renewPrivateInvite(c.id)));
     target.appendChild(p);
   }
 }
 function logout(){
   const token=state.access;state.access=null;state.refresh=null;state.user=null;state.expires=0;
+  latestPrivateInvite="";$("#inviteOutput").textContent="";$("#copyInvite").hidden=true;
   setVisible(disabled()?"closed":"loginSection");
   if(token)send("/auth/v1/logout",{method:"POST",token}).catch(()=>{});
   status("Вы вышли");
@@ -199,6 +222,7 @@ $("#createForm").addEventListener("submit",create);
 $("#acceptForm").addEventListener("submit",accept);
 $("#logout").addEventListener("click",logout);
 $("#refresh").addEventListener("click",()=>refresh().catch(err=>status(message(err),true)));
+$("#copyInvite").addEventListener("click",copyPrivateInvite);
 if(!disabled())setVisible("loginSection");
 </script>
 </body>
