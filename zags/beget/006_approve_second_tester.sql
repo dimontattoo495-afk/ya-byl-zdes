@@ -16,9 +16,13 @@ BEGIN
      to_regclass('auth.users') IS NULL
   THEN RAISE EXCEPTION 'Private ZAGS beta was not installed'; END IF;
 
-  SELECT count(*), min(user_id) INTO v_active,v_first
+  SELECT count(*) INTO v_active
   FROM zags.preview_testers
   WHERE enabled=true AND expires_at>now();
+  SELECT user_id INTO v_first
+  FROM zags.preview_testers
+  WHERE enabled=true AND expires_at>now()
+  LIMIT 1;
   IF v_active<>1
   THEN RAISE EXCEPTION 'Exactly ONE owner beta tester required; found %',v_active; END IF;
 
