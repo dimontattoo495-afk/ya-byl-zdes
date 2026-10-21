@@ -57,6 +57,12 @@ jobs:
         run: psql -v ON_ERROR_STOP=1 -f zags/beget/ci/02_isolation_test.sql
       - name: Exercise isolated user journey with simulated accounts
         run: psql -v ON_ERROR_STOP=1 -f zags/beget/ci/03_onboarding_test.sql
+      - name: Stage owner-approved ZAGS private beta gate (CI only)
+        run: psql -v ON_ERROR_STOP=1 -f zags/beget/003_private_beta_allowlist.sql
+      - name: Test zero testers, allowlisted JWT and expiration (CI only)
+        run: psql -v ON_ERROR_STOP=1 -f zags/beget/ci/04_private_beta_test.sql
+      - name: Guard independent Russian ZAGS UI remains disabled and payment-free
+        run: node zags/beget-preview-static-check.cjs
       - name: Confirm second application fails closed without altering data
         run: |
           if psql -v ON_ERROR_STOP=1 -f zags/beget/001_isolated_schema.sql; then
