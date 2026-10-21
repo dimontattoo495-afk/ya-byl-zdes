@@ -118,7 +118,7 @@ function saveSession(data){
   state.refresh=data.refresh_token||null;
   state.user=data.user;
   state.expires=Date.now()+Number(data.expires_in||3600)*1000;
-  // Session memory only. Do not persist auth/refresh tokens in URL/localStorage.
+  // Session memory only; do not persist authentication credentials.
 }
 async function jwt(){
   if(!state.access)throw Error("Сначала войдите");
