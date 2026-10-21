@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow,noarchive"><meta name="referrer" content="no-referrer">
+<title>Проверка оплаты ЗАГСа · Я был здесь</title>
+<style>
+:root{font-family:Arial,sans-serif;background:#faf7f2;color:#332830}*{box-sizing:border-box}body{margin:0;padding:24px}main{max-width:620px;margin:25px auto;border:1px solid #e2d9d4;background:white;padding:32px;border-radius:14px}h1{font:normal 42px Georgia,serif;color:#683946}p{line-height:1.65}button,input{padding:13px 16px;font:inherit;border-radius:7px}button{background:#854754;color:#fff;border:0;cursor:pointer}button:disabled{opacity:.5;cursor:wait}input{border:1px solid #cdbfba;width:100%}label{display:block;margin:13px 0}.notice{background:#fff1df;border-left:4px solid #d4a45c;padding:12px 16px}.note{color:#6d6068;font-size:13px}#status{white-space:pre-wrap;margin:16px 0;color:#694253}nav a{color:#854754}#verify,#paybox{display:none}strong.price{font:normal 42px Georgia,serif;color:#854754}@media(max-width:600px){body{padding:10px}main{padding:20px}h1{font-size:33px}}
+</style></head>
+<body><main><nav><a href="./">← Виртуальный ЗАГС</a></nav>
+<h1>Проверка оплаты</h1>
+<div class="notice"><b>Тестовый терминал Т-Банка.</b> Сумма 10 ₽ условная — настоящие деньги не списываются. Работает только с тестовыми картами банка и разрешённым аккаунтом владельца проекта.</div>
+<p><strong class="price">10 ₽</strong><br>ТЕСТ: шуточная виртуальная свадебная церемония</p>
+<div id="login"><label for="email">Почта аккаунта ЗАГСа</label><input id="email" type="email" autocomplete="email">
+<button id="send" type="button">Получить код</button></div>
+<div id="verify"><label for="otp">Код из письма</label><input id="otp" type="text" inputmode="numeric" autocomplete="one-time-code">
+<button id="check-otp" type="button">Войти</button></div>
+<div id="paybox"><p id="identity" class="note"></p><button id="start" type="button">Открыть тестовую форму Т-Банка</button><button id="check" type="button">Проверить статус операции</button>
+<p class="note">После возврата из банка будет показан статус, подтверждённый методом GetState. Настоящий статус оплаты пары в базе не меняется.</p></div>
+<div id="status" role="status" aria-live="polite"></div>
+<p class="note">Вся процедура ограничена изолированным тестом. Отдельно перед запуском проверяется отправка электронного чека в кабинете «Чеки Т-Бизнеса».</p></main>
+<script src="../config.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+(() => {
+ const cfg=window.YBZ_CONFIG;
+ if(!cfg?.SUPABASE_URL||!cfg?.SUPABASE_ANON_KEY||!window.supabase){document.querySelector('#status').textContent='Не удалось загрузить авторизацию';return;}
+ const sb=window.supabase.createClient(cfg.SUPABASE_URL,cfg.SUPABASE_ANON_KEY,{auth:{storageKey:'ybz-zags-session'}});
+ const $=s=>document.querySelector(s);
+ let email='',busy=false;
+ const out=(t)=>{$('#status').textContent=t;};
+ const run=async(fn)=>{if(busy)return;busy=true;document.querySelectorAll('button').forEach(b=>b.disabled=true);out('');try{await fn();}catch(err){out(err.message||'Ошибка');}finally{busy=false;document.querySelectorAll('button').forEach(b=>b.disabled=false);}};
+ async function api(body){
+  const {data:{session}}=await sb.auth.getSession();if(!session)throw Error('Сначала войдите');
+  const r=await fetch(cfg.SUPABASE_URL+'/functions/v1/zags-payment-demo',{method:'POST',headers:{apikey:cfg.SUPABASE_ANON_KEY,Authorization:'Bearer '+session.access_token,'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const result=await r.json();if(!r.ok)throw Error(result.error||'Ошибка Т-Банка');return result;
+ }
+ async function state(){
+  const {data:{session}}=await sb.auth.getSession();
+  $('#login').style.display=session?'none':'block';
+  $('#verify').style.display='none';
+  $('#paybox').style.display=session?'block':'none';
+  if(session)$('#identity').textContent='Вход: '+(session.user.email||'подтверждён');
+  if(session&&new URLSearchParams(location.search).has('return'))await checkPayment();
+ }
+ async function checkPayment(){
+  const state=JSON.parse(sessionStorage.getItem('zags-demo-checkout')||'null');
+  if(!state){out('Тестовый заказ не найден в этом браузере. Создайте новый тест только при необходимости.');return;}
+  const result=await api({action:'check',order_id:state.order_id,payment_id:state.payment_id});
+  out(result.confirmed?'ТЕСТ УСПЕШЕН: банк подтвердил 10 ₽ в тестовой среде. Реального списания не было.':'Статус тестового платежа: '+result.status+'. Деньги не списаны.');
+ }
+ $('#send').onclick=()=>run(async()=>{
+  email=$('#email').value.trim();if(!email)throw Error('Укажите почту');
+  const {error}=await sb.auth.signInWithOtp({email,options:{shouldCreateUser:false}});
+  if(error)throw error;$('#login').style.display='none';$('#verify').style.display='block';out('Код отправлен');
+ });
+ $('#check-otp').onclick=()=>run(async()=>{
+  const {error}=await sb.auth.verifyOtp({email,token:$('#otp').value.trim(),type:'email'});
+  if(error)throw error;await state();
+ });
+ $('#start').onclick=()=>run(async()=>{
+  if(sessionStorage.getItem('zags-demo-checkout'))throw Error('В этом браузере уже есть тестовый заказ. Проверьте его статус, прежде чем начинать новый.');
+  const result=await api({action:'init'});
+  if(result.amount_kopecks!==1000)throw Error('Неверная сумма теста');
+  const url=new URL(result.checkout_url);
+  if(url.protocol!=='https:'||!(url.hostname==='tinkoff.ru'||url.hostname.endsWith('.tinkoff.ru')))throw Error('Неверная ссылка банка');
+  sessionStorage.setItem('zags-demo-checkout',JSON.stringify({order_id:result.order_id,payment_id:result.payment_id}));
+  location.assign(url.href);
+ });
+ $('#check').onclick=()=>run(checkPayment);
+ state().catch(e=>out(e.message||'Ошибка входа'));
+})();
+</script></body></html>
