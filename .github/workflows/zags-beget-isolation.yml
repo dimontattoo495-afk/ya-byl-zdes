@@ -39,6 +39,7 @@ jobs:
           bash -n zags/beget/install-private-zags.sh
           bash -n zags/beget/readonly-auth-readiness.sh
           bash -n zags/beget/install-private-beta.sh
+          bash -n zags/beget/approve-owner-test.sh
       - name: Verify temporary PostgreSQL
         run: psql -c "SELECT current_setting('server_version');"
       - name: Prepare synthetic accounts and TATTOO PRICE sentinel
@@ -62,6 +63,16 @@ jobs:
         run: psql -v ON_ERROR_STOP=1 -f zags/beget/003_private_beta_allowlist.sql
       - name: Test zero testers, allowlisted JWT and expiration (CI only)
         run: psql -v ON_ERROR_STOP=1 -f zags/beget/ci/04_private_beta_test.sql
+      - name: Test owner-only four-hour beta consent from existing Auth account
+        run: |
+          psql -v ON_ERROR_STOP=1 -c "UPDATE auth.users SET email='confirmed-owner@example.invalid',email_confirmed_at=now() WHERE id='11111111-1111-4111-8111-111111111111'"
+          psql -v ON_ERROR_STOP=1 -c "UPDATE zags.preview_testers SET enabled=false"
+          psql -v ON_ERROR_STOP=1 -v owner_email='confirmed-owner@example.invalid' -f zags/beget/005_approve_existing_owner.sql
+          psql -v ON_ERROR_STOP=1 -c "DO \\\$\\\$ BEGIN IF (SELECT count(*) FROM zags.preview_testers WHERE enabled AND expires_at > now())<>1 THEN RAISE EXCEPTION 'Owner allowance mismatch'; END IF; END \\\$\\\$;"
+          if psql -v ON_ERROR_STOP=1 -v owner_email='unverified@example.invalid' -f zags/beget/005_approve_existing_owner.sql; then
+            echo "ERROR: duplicate or unverified account approved"
+            exit 1
+          fi
       - name: Guard independent Russian ZAGS UI remains disabled and payment-free
         run: node zags/beget-preview-static-check.cjs
       - name: Confirm second application fails closed without altering data
