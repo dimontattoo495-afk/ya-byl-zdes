@@ -33,7 +33,7 @@ assert.match(edge,/body\.action==='check'\|\|body\.action==='refund'/,'Refund sh
 assert.match(edge,/if\(state\.Status!=='CONFIRMED'\)/,'Refund requires a confirmed DEMO payment');
 assert.match(edge,/await bank\('Cancel',\{PaymentId:body\.payment_id\}\)/,'Refund must use full Cancel with no Amount or Receipt');
 assert.match(edge,/const after=await bank\('GetState',\{PaymentId:body\.payment_id\}\)/,'Refund must re-check state from bank');
-assert.match(edge,/verifiedState\(after,order,terminal\)/,'Returned refund must match the original DEMO order and 10 RUB amount');
+assert.match(edge,/verifiedDemoState\(after,order\)/,'Returned refund validates DEMO payment identity after Cancel');
 assert.match(ui,/id="start-refund"/,'Test 8 uses separate initiated order');
 assert.match(ui,/id="refund"/,'Explicit user action needed for refund');
 assert.match(ui,/order\.purpose!=='refund'\|\|!order\.confirmed\|\|order\.refunded/,'No repeat or accidental refund action on test 7');
