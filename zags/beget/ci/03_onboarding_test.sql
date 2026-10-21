@@ -8,6 +8,8 @@ DECLARE
  invited jsonb;
  accepted jsonb;
  details jsonb;
+ renewed jsonb;
+ old_token text;
  pair_id uuid;
  token text;
  rejected boolean;
@@ -42,6 +44,19 @@ BEGIN
  EXCEPTION WHEN others THEN rejected:=true;
  END;
  IF NOT rejected THEN RAISE EXCEPTION 'Creator was able to accept own invite'; END IF;
+
+ -- Leaked/screenshot invite tokens must be invalidated by 'renew'.
+ old_token:=token;
+ renewed:=public.zags_v2_action('renew',jsonb_build_object('id',pair_id));
+ token:=renewed->>'token';
+ IF length(token)<>64 OR token=old_token
+ THEN RAISE EXCEPTION 'Renew failed to generate a fresh token'; END IF;
+ rejected:=false;
+ BEGIN
+   PERFORM public.zags_v2_action('invitation',jsonb_build_object('id',pair_id,'token',old_token));
+ EXCEPTION WHEN others THEN rejected:=true;
+ END;
+ IF NOT rejected THEN RAISE EXCEPTION 'Previously leaked invite token still works'; END IF;
 
  PERFORM set_config('request.jwt.claim.sub','',true);
  invited:=public.zags_v2_action('invitation',jsonb_build_object('id',pair_id,'token',token));
