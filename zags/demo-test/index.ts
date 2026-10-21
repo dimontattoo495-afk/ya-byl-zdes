@@ -142,8 +142,12 @@ Deno.serve(async(req:Request)=>{
    if(String(response.OrderId)!==order||Number(response.Amount)!==amount||!response.PaymentId||!response.PaymentURL)
     return reply({error:'Неверные параметры ответа банка'},502);
    const url=new URL(String(response.PaymentURL));
-   if(url.protocol!=='https:'||!(url.hostname==='tinkoff.ru'||url.hostname.endsWith('.tinkoff.ru')))
-     return reply({error:'Некорректная ссылка на тестовую форму'},502);
+   const bankDomains=['tinkoff.ru','tbank.ru','tcsbank.ru'];
+   const bankHost=bankDomains.some(d=>url.hostname===d||url.hostname.endsWith('.'+d));
+   if(url.protocol!=='https:'||url.username||url.password||url.port||!bankHost){
+     console.warn('ZAGS DEMO: bank checkout rejected: hostname',url.hostname);
+     return reply({error:'Неподтверждённый адрес платёжной формы Т-Банка: '+url.hostname},502);
+   }
    return reply({order_id:order,payment_id:String(response.PaymentId),amount_kopecks:amount,checkout_url:url.href});
   }
   if(body.action==='check'){
