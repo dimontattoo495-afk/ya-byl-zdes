@@ -18,8 +18,8 @@ const fs=require('node:fs');
    };
   });
   await page.goto('http://127.0.0.1:8765/zags/',{waitUntil:'domcontentloaded'});
-  await page.locator('.hero-art img[src="vintage-certificate.svg"]').waitFor();
-  assert.equal(await page.locator('.hero-art img').evaluate(e=>e.naturalWidth>0),true,'Decorative template did not load');
+  await page.locator('.hero-art img[src="approved-certificate.webp"]').waitFor();
+  assert.equal(await page.locator('.hero-art img').evaluate(e=>e.naturalWidth===1200&&e.naturalHeight===1696),true,'Decorative template did not load');
 
   await page.locator('#demo').click();
   await page.locator('#name1').fill('Александра');
