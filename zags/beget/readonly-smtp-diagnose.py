@@ -62,8 +62,10 @@ print("EMAIL_CONFIRMATION=" + (
 try:
     log = run(["docker", "logs", "--since", "45m", "--tail", "800", NAME])
     raw = (log.stdout or "") + "\n" + (log.stderr or "")
+    logs_ok = (log.returncode == 0)
 except (OSError, subprocess.TimeoutExpired):
     raw = ""
+    logs_ok = False
 raw = raw[-350000:].lower()
 signals = {
     "SMTP_DNS_RESOLUTION": r"no such host|server misbehaving|name or service not known|temporary failure in name resolution|dns error|lookup .* on .*:53",
@@ -80,7 +82,7 @@ print("=== CLASSIFIED AUTH LOG ERRORS (PAST 45 MINUTES) ===")
 for name, regex in signals.items():
     hits = len(re.findall(regex, raw, re.IGNORECASE))
     print(f"{name}={'YES' if hits else 'NO'}")
-print("AUTH_LOGS_READ=" + ("YES" if log.returncode == 0 else "NO"))
+print("AUTH_LOGS_READ=" + ("YES" if logs_ok else "NO"))
 print("=== SAFE NEXT STEP ===")
 if any(re.search(signals[k],raw,re.IGNORECASE) for k in signals if k not in ("CONFIRMATION_EMAIL_FAILURE",)):
     print("DIAGNOSIS=SPECIFIC_SMTP_FAILURE_CATEGORY_ABOVE")
