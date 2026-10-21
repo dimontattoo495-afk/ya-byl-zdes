@@ -1,0 +1,61 @@
+name: ZAGS Beget isolation dry-run
+on:
+  pull_request:
+    paths:
+      - 'zags/beget/**'
+      - '.github/workflows/zags-beget-isolation.yml'
+  workflow_dispatch:
+
+jobs:
+  postgres-dry-run:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_DB: postgres
+          POSTGRES_PASSWORD: local-ci-test-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGUSER: postgres
+      PGDATABASE: postgres
+      PGPASSWORD: local-ci-test-only
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify temporary PostgreSQL
+        run: psql -c "SELECT current_setting('server_version');"
+      - name: Prepare synthetic accounts and TATTOO PRICE sentinel
+        run: psql -v ON_ERROR_STOP=1 -f zags/beget/ci/00_fixture.sql
+      - name: Apply isolated schema to ephemeral test DB
+        run: psql -v ON_ERROR_STOP=1 -f zags/beget/001_isolated_schema.sql
+      - name: Check isolation, privacy and synthetic workflows
+        run: psql -v ON_ERROR_STOP=1 -f zags/beget/ci/02_isolation_test.sql
+      - name: Confirm second application fails closed without altering data
+        run: |
+          if psql -v ON_ERROR_STOP=1 -f zags/beget/001_isolated_schema.sql; then
+            echo "ERROR: unexpected duplicate migration success"
+            exit 1
+          fi
+          psql -v ON_ERROR_STOP=1 -c "SELECT CASE WHEN count(*)=1 THEN 'PASS: app unaffected' ELSE 'FAIL' END FROM public.tp_listings;"
+      - name: Guard against destructive commands in published preflight
+        run: |
+          node - <<'JS'
+          const fs=require('node:fs'),assert=require('node:assert/strict');
+          const s=fs.readFileSync('zags/beget/readonly-preflight.sql','utf8')
+            .replace(/--[^\n]*/g,'').replace(/'([^']|'')*'/g,"''");
+          const forbidden=/\b(?:INSERT|UPDATE|DELETE|DROP|ALTER|CREATE|TRUNCATE|COPY|EXECUTE|DO|CALL)\b/i;
+          assert.ok(!forbidden.test(s),'Public preflight must be read-only');
+          assert.ok(/^\s*SELECT\b/i.test(s),'Preflight must use SELECT');
+          console.log('PASS: preflight remains read-only');
+          JS
