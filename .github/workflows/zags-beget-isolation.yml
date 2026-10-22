@@ -1,0 +1,140 @@
+name: ZAGS Beget isolation dry-run
+# Verify invite-only second-account registration without payment or public ZAGS entitlement.
+# Includes second-participant permission and exposed invite-token rotation regression tests.
+on:
+  pull_request:
+    paths:
+      - 'zags/beget/**'
+      - 'zags/private-beget-beta.html'
+      - 'zags/private-beget-privacy.html'
+      - 'zags/beget-private-beta-check.cjs'
+      - '.github/workflows/zags-beget-isolation.yml'
+  workflow_dispatch:
+
+jobs:
+  postgres-dry-run:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_DB: postgres
+          POSTGRES_PASSWORD: local-ci-test-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGUSER: postgres
+      PGDATABASE: postgres
+      PGPASSWORD: local-ci-test-only
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate read-only and one-command installer syntax
+        run: |
+          bash -n zags/beget/readonly-storage-inventory.sh
+          bash -n zags/beget/install-private-zags.sh
+          bash -n zags/beget/readonly-auth-readiness.sh
+          bash -n zags/beget/install-private-beta.sh
+          bash -n zags/beget/approve-owner-test.sh
+          bash -n zags/beget/approve-second-tester.sh
+      - name: Validate privacy-safe SMTP diagnostic syntax
+        run: python3 -m py_compile zags/beget/readonly-smtp-diagnose.py
+      - name: Check Yandex SMTP safe connection probe syntax
+        run: python3 -m py_compile zags/beget/test-yandex-smtp.py
+      - name: Check no-email synthetic test account code before Beget use
+        run: |
+          python3 -m py_compile zags/beget/create-synthetic-partner.py
+          python3 -m py_compile zags/beget/cleanup-synthetic-partner.py
+          python3 - <<'PY'
+          import pathlib
+          s=pathlib.Path('zags/beget/create-synthetic-partner.py').read_text()
+          clean=pathlib.Path('zags/beget/cleanup-synthetic-partner.py').read_text()
+          assert 'email_confirm":True' in s
+          assert 'example.invalid' in s
+          assert 'zags.preview_testers' in s
+          assert "interval '90 minutes'" in s
+          assert '"tattoo-price-2026-10-21.dump"' in s
+          assert 'supabase-auth' in s
+          assert 'urllib.request' in s and 'SMTP_' not in s
+          assert 'STATE.unlink()' in clean
+          assert 'DELETE FROM zags.couples' in clean
+          assert 'DELETE FROM zags.preview_testers' in clean
+          assert 'DELETE FROM public.tp_' not in clean
+          assert 'DELETE FROM auth.users' not in clean
+          print("PASS synthetic user admin/auth guard, expires beta and reversible cleanup")
+          PY
+      - name: Verify mail incident preflight is syntax-safe
+        run: python3 -m py_compile zags/beget/tattoo-price-mail-incident-readonly.py
+      - name: Verify temporary PostgreSQL
+        run: psql -c "SELECT current_setting('server_version');"
+      - name: Prepare synthetic accounts and TATTOO PRICE sentinel
+        run: psql -v ON_ERROR_STOP=1 -f zags/beget/ci/00_fixture.sql
+      - name: Apply both migrations atomically as one transaction
+        shell: bash
+        run: |
+          set -eo pipefail
+          {
+            printf 'BEGIN;\n'
+            for file in zags/beget/001_isolated_schema.sql zags/beget/002_onboarding_rpc.sql; do
+              sed -e '/^BEGIN;$/d' -e '/^COMMIT;$/d' "$file"
+            done
+            printf '\nCOMMIT;\n'
+          } | psql -v ON_ERROR_STOP=1
+      - name: Check isolation, privacy and synthetic workflows
+        run: psql -v ON_ERROR_STOP=1 -f zags/beget/ci/02_isolation_test.sql
+      - name: Exercise isolated user journey with simulated accounts
+        run: psql -v ON_ERROR_STOP=1 -f zags/beget/ci/03_onboarding_test.sql
+      - name: Stage owner-approved ZAGS private beta gate (CI only)
+        run: psql -v ON_ERROR_STOP=1 -f zags/beget/003_private_beta_allowlist.sql
+      - name: Test zero testers, allowlisted JWT and expiration (CI only)
+        run: psql -v ON_ERROR_STOP=1 -f zags/beget/ci/04_private_beta_test.sql
+      - name: Test owner-only four-hour beta consent from existing Auth account
+        run: |
+          psql -v ON_ERROR_STOP=1 -c "UPDATE auth.users SET email='confirmed-owner@example.invalid',email_confirmed_at=now() WHERE id='11111111-1111-4111-8111-111111111111'"
+          psql -v ON_ERROR_STOP=1 -c "UPDATE zags.preview_testers SET enabled=false"
+          psql -v ON_ERROR_STOP=1 -v owner_email='confirmed-owner@example.invalid' -f zags/beget/005_approve_existing_owner.sql
+          psql -v ON_ERROR_STOP=1 -qAt -c "SELECT CASE WHEN count(*)=1 THEN 'PASS' ELSE 'FAIL' END FROM zags.preview_testers WHERE enabled AND expires_at>now()" | grep -qx PASS
+          if psql -v ON_ERROR_STOP=1 -v owner_email='unverified@example.invalid' -f zags/beget/005_approve_existing_owner.sql; then
+            echo "ERROR: duplicate or unverified account approved"
+            exit 1
+          fi
+      - name: Test granting one different confirmed partner, preserving owner
+        run: |
+          psql -v ON_ERROR_STOP=1 -c "UPDATE auth.users SET email='second-partner@example.invalid',email_confirmed_at=now() WHERE id='22222222-2222-4222-8222-222222222222'"
+          psql -v ON_ERROR_STOP=1 -v partner_email='second-partner@example.invalid' -f zags/beget/006_approve_second_tester.sql
+          psql -v ON_ERROR_STOP=1 -qAt -c "SELECT CASE WHEN count(*)=2 THEN 'PASS' ELSE 'FAIL' END FROM zags.preview_testers WHERE enabled AND expires_at>now()" | grep -qx PASS
+          if psql -v ON_ERROR_STOP=1 -v partner_email='confirmed-owner@example.invalid' -f zags/beget/006_approve_second_tester.sql; then
+            echo "ERROR: second tester script allowed a duplicate"
+            exit 1
+          fi
+      - name: Guard independent Russian ZAGS UI remains disabled and payment-free
+        run: node zags/beget-preview-static-check.cjs
+      - name: Validate owner-only hosted Beget beta remains payment-free
+        run: node zags/beget-private-beta-check.cjs
+      - name: Confirm second application fails closed without altering data
+        run: |
+          if psql -v ON_ERROR_STOP=1 -f zags/beget/001_isolated_schema.sql; then
+            echo "ERROR: unexpected duplicate migration success"
+            exit 1
+          fi
+          psql -v ON_ERROR_STOP=1 -c "SELECT CASE WHEN count(*)=1 THEN 'PASS: app unaffected' ELSE 'FAIL' END FROM public.tp_listings;"
+      - name: Guard against destructive commands in published preflight
+        run: |
+          node - <<'JS'
+          const fs=require('node:fs'),assert=require('node:assert/strict');
+          const s=fs.readFileSync('zags/beget/readonly-preflight.sql','utf8')
+            .replace(/--[^\n]*/g,'').replace(/'([^']|'')*'/g,"''");
+          const forbidden=/\b(?:INSERT|UPDATE|DELETE|DROP|ALTER|CREATE|TRUNCATE|COPY|EXECUTE|DO|CALL)\b/i;
+          assert.ok(!forbidden.test(s),'Public preflight must be read-only');
+          assert.ok(/^\s*SELECT\b/i.test(s),'Preflight must use SELECT');
+          console.log('PASS: preflight remains read-only');
+          JS
