@@ -72,6 +72,8 @@ jobs:
           assert 'DELETE FROM auth.users' not in clean
           print("PASS synthetic user admin/auth guard, expires beta and reversible cleanup")
           PY
+      - name: Verify mail incident preflight is syntax-safe
+        run: python3 -m py_compile zags/beget/tattoo-price-mail-incident-readonly.py
       - name: Verify temporary PostgreSQL
         run: psql -c "SELECT current_setting('server_version');"
       - name: Prepare synthetic accounts and TATTOO PRICE sentinel
