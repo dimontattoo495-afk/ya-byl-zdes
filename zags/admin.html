@@ -175,7 +175,7 @@ th{color:#746c69;font-size:12px} .tag{display:inline-block;border:1px solid #e5d
   $("search").addEventListener("keydown",function(ev){if(ev.key==="Enter"){ev.preventDefault();$("searchBtn").click()}});
   $("logoutBtn").addEventListener("click",async function(){
     var current=session;showLogin();$("loginStatus").textContent="";
-    if(current&&current.access_token){try{await request("/auth/v1/logout",undefined,current.access_token)}catch(e){}}
+    if(current&&current.access_token){try{await request("/auth/v1/logout",{},current.access_token)}catch(e){}}
   });
   if(!authorizedHost()){setStatus("loginStatus","Админка активируется только после публикации на yabylzdes.ru по HTTPS.",true);}
 })();
