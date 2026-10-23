@@ -52,7 +52,7 @@ jobs:
               try {
                 const response = await fetch(url,{redirect:'follow',signal:AbortSignal.timeout(12000)});
                 const text = await response.text();
-                console.log('WEB_RESULT '+JSON.stringify({url,status:response.status,finalUrl:response.url,site:response.url.endsWith('/zags/')?'zags':'main',correctContent:response.url.includes('/zags/')?text.includes('paymentsEnabled:false'):text.includes('Я БЫЛ ЗДЕСЬ')}));
+                console.log('WEB_RESULT '+JSON.stringify({url,status:response.status,finalUrl:response.url,site:response.url.endsWith('/zags/')?'zags':'main',correctContent:response.url.includes('/zags/')?text.includes('paymentsEnabled:true'):text.includes('Я БЫЛ ЗДЕСЬ')}));
               } catch(e) {
                 console.log('WEB_RESULT '+JSON.stringify({url,error:e.cause?.code||e.code||e.message}));
               }
