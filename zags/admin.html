@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<meta name="referrer" content="no-referrer">
+<title>Администратор — Я был здесь · Виртуальный ЗАГС</title>
+<style>
+:root{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#342b30;background:#f7f3ef}
+*{box-sizing:border-box}body{margin:0;padding:22px 14px}
+main{max-width:1180px;margin:auto}
+header{display:flex;justify-content:space-between;align-items:center;gap:14px;margin:0 0 22px}
+a{color:#824657}.brand{font:20px Georgia,serif;color:#824657;text-decoration:none}
+h1,h2{font-family:Georgia,"Times New Roman",serif;color:#824657;font-weight:500}
+h1{font-size:clamp(30px,5vw,44px);margin:8px 0}h2{font-size:25px;margin:0 0 12px}
+.card{background:#fff;border:1px solid #e8ddda;border-radius:16px;padding:clamp(18px,3vw,28px);margin:16px 0;box-shadow:0 8px 28px #43241408}
+.login{max-width:480px;margin:48px auto}
+.muted{color:#746c69;font-size:14px;line-height:1.55}
+.notice{padding:13px 15px;border-left:4px solid #b98748;background:#fff1dd;line-height:1.55}
+label{display:block;margin:14px 0 6px;font-weight:650;font-size:14px}
+input{width:100%;padding:12px;border:1px solid #d9ceca;border-radius:8px;font:inherit}
+button,.button{display:inline-block;border:0;border-radius:8px;padding:11px 16px;background:#824657;color:white;font:inherit;cursor:pointer;text-decoration:none}
+.secondary{background:#f2e8e7;color:#753f4b}.actions{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
+button:disabled{opacity:.55;cursor:wait}
+#status{min-height:24px;white-space:pre-wrap;overflow-wrap:anywhere}.error{color:#a31d27}.success{color:#21633f}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:18px 0}
+.stat{border:1px solid #e8ddda;border-radius:12px;padding:14px;background:#fdfbfa}
+.stat span{display:block;color:#746c69;font-size:12px}.stat b{display:block;font-size:25px;margin-top:5px}
+.toolbar{display:flex;gap:8px;margin:14px 0}.toolbar input{flex:1;min-width:180px}
+.scroll{overflow:auto}table{width:100%;border-collapse:collapse;min-width:800px}
+th,td{text-align:left;padding:10px 8px;border-bottom:1px solid #eee5e2;font-size:13px;vertical-align:top}
+th{color:#746c69;font-size:12px} .tag{display:inline-block;border:1px solid #e5d9d5;border-radius:999px;padding:3px 8px;white-space:nowrap}
+.project{display:flex;justify-content:space-between;gap:16px;align-items:center;flex-wrap:wrap}
+[hidden]{display:none!important}
+@media(max-width:650px){.grid{grid-template-columns:1fr 1fr}header{align-items:flex-start}.toolbar{flex-wrap:wrap}.toolbar input{flex-basis:100%}}
+</style>
+</head>
+<body>
+<main>
+<header>
+<a class="brand" href="./">Я БЫЛ ЗДЕСЬ · ВИРТУАЛЬНЫЙ ЗАГС</a>
+<a href="./">На сайт</a>
+</header>
+<section class="card">
+<h1>Единая админка</h1>
+<p class="muted">Панель управления проектами «Я был здесь» и «Виртуальный ЗАГС».</p>
+<div class="notice"><b>Данные ЗАГСа:</b> этот раздел подключается к российскому серверу Beget и показывает заявки в режиме просмотра. Доступ выдаётся отдельно для ЗАГСа. Общая авторизация TATTOO PRICE не меняется.</div>
+</section>
+<section id="loginBox" class="card login">
+<h2>Вход администратора ЗАГСа</h2>
+<p class="muted">Введите подтверждённую почту и пароль аккаунта на Beget. Обычный вход не даёт прав администратора.</p>
+<form id="loginForm">
+<label for="email">Почта</label><input id="email" type="email" required maxlength="254" autocomplete="username">
+<label for="password">Пароль</label><input id="password" type="password" required autocomplete="current-password">
+<div class="actions" style="margin-top:16px"><button id="loginBtn" type="submit">Войти</button></div>
+</form>
+<p id="loginStatus" role="status" aria-live="polite"></p>
+</section>
+<section id="adminApp" hidden>
+<div class="card project">
+<div><h2>«Я был здесь»</h2><p class="muted">Открывает действующую панель управления записями и платежами этого проекта.</p></div>
+<a class="button secondary" href="../admin.html">Открыть панель «Я был здесь» ↗</a>
+</div>
+<div class="card">
+<div class="project"><div><h2>Виртуальный ЗАГС</h2><p class="muted">Заявки и платежные статусы. Секрет приглашения, клятвы, фото и данные аккаунтов сюда не выводятся.</p></div>
+<div class="actions"><button id="refreshBtn" class="secondary" type="button">Обновить</button><button id="logoutBtn" class="secondary" type="button">Выйти</button></div></div>
+<div class="grid" aria-label="Сводка по ЗАГСу">
+<div class="stat"><span>Всего заявок</span><b id="sTotal">—</b></div>
+<div class="stat"><span>Ждут партнёра</span><b id="sPending">—</b></div>
+<div class="stat"><span>Партнёр принял</span><b id="sAccepted">—</b></div>
+<div class="stat"><span>Завершённые истории</span><b id="sMarried">—</b></div>
+<div class="stat"><span>Оплачено</span><b id="sPaid">—</b></div>
+<div class="stat"><span>Проверяется оплата</span><b id="sPayPending">—</b></div>
+</div>
+<div class="toolbar">
+<input id="search" type="search" maxlength="100" placeholder="Поиск по имени, фамилии или ID заявки">
+<button id="searchBtn" class="secondary" type="button">Найти</button>
+</div>
+<div class="scroll"><table>
+<thead><tr><th>Пара / ID</th><th>Тариф</th><th>Статус оплаты</th><th>Приглашение принято</th><th>История завершена</th><th>Создано</th><th>Дата</th></tr></thead>
+<tbody id="rows"><tr><td colspan="7">Загрузка…</td></tr></tbody>
+</table></div>
+<p class="muted">Панель пока только для просмотра. Действия с заявками и платежами добавляются отдельно после проверки их правил на Beget.</p>
+</div>
+<p id="appStatus" role="status" aria-live="polite"></p>
+</section>
+</main>
+<script>
+"use strict";
+(function(){
+  var API_BASE="https://api.smoke-tattoo.ru";
+  var ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg5MzcwNTUxLCJleHAiOjE5NDcwNTA1NTF9.b3yB8Ttu1enWRfrZqUzMdVmEQV_0gI2MOhWyVPm76Ik";
+  var $=function(id){return document.getElementById(id)};
+  var session=null;
+  var fmt=function(v){return new Intl.NumberFormat("ru-RU").format(Number(v||0))};
+  var date=function(v){return v?new Date(v).toLocaleString("ru-RU",{timeZone:"Europe/Moscow"}):"—"};
+  var esc=function(v){return String(v==null?"":v).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]})};
+  function setStatus(id,text,isError){$(id).textContent=text||"";$(id).className=isError?"error":"success"}
+  function authorizedHost(){
+    return location.protocol==="https:" && (location.hostname==="yabylzdes.ru"||location.hostname==="www.yabylzdes.ru") && location.pathname==="/zags/admin.html";
+  }
+  async function request(path,body,token){
+    if(!authorizedHost())throw Error("Откройте админку на сайте yabylzdes.ru по защищённому адресу HTTPS.");
+    var headers={"apikey":ANON_KEY};
+    if(token)headers.Authorization="Bearer "+token;
+    if(body!==undefined)headers["Content-Type"]="application/json";
+    var response=await fetch(API_BASE+path,{method:body===undefined?"GET":"POST",headers:headers,body:body===undefined?undefined:JSON.stringify(body),cache:"no-store",signal:AbortSignal.timeout(15000)});
+    var text=await response.text(),data=null;
+    try{data=text?JSON.parse(text):null}catch(e){data=text}
+    if(!response.ok)throw Error(data&&(data.message||data.msg||data.error_description||data.error)||"Ошибка сервера ("+response.status+")");
+    return data;
+  }
+  async function rpc(name,args){
+    if(!session||!session.access_token)throw Error("Войдите снова");
+    return request("/rest/v1/rpc/"+name,args,session.access_token);
+  }
+  function showLogin(){
+    $("loginBox").hidden=false;$("adminApp").hidden=true;session=null;
+  }
+  function showAdmin(){
+    $("loginBox").hidden=true;$("adminApp").hidden=false;
+  }
+  async function login(ev){
+    ev.preventDefault();
+    var button=$("loginBtn");button.disabled=true;setStatus("loginStatus","Проверяем вход на Beget…",false);
+    try{
+      var auth=await request("/auth/v1/token?grant_type=password",{email:$("email").value.trim(),password:$("password").value});
+      $("password").value="";
+      if(!auth||!auth.access_token)throw Error("Сервер не вернул сессию");
+      session=auth;
+      var allowed=await rpc("zags_admin_is_admin",{});
+      if(allowed!==true){session=null;throw Error("Для этого аккаунта права администратора ЗАГСа не назначены");}
+      showAdmin();setStatus("appStatus","Доступ подтверждён. Загружаем заявки…",false);
+      await refresh();
+    }catch(err){$("password").value="";setStatus("loginStatus",String(err.message||"Не удалось войти").slice(0,220),true);showLogin();}
+    finally{button.disabled=false}
+  }
+  function statusLabel(value){
+    var labels={unpaid:"Не оплачено",pending:"Ожидает проверки",paid:"Оплачено",refunded:"Возвращено"};
+    return labels[value]||value||"—";
+  }
+  async function loadRows(){
+    var data=await rpc("zags_admin_couples_v1",{p_search:$("search").value.trim(),p_limit:100,p_offset:0});
+    if(!Array.isArray(data))data=[];
+    $("rows").innerHTML=data.map(function(row){
+      return "<tr><td><b>"+esc(row.name1)+" + "+esc(row.name2)+"</b><br><span class=\"muted\">"+esc(row.family)+"<br>"+esc(row.id)+"</span></td>"+
+        "<td><span class=\"tag\">"+esc(row.plan)+"</span></td>"+
+        "<td><span class=\"tag\">"+esc(statusLabel(row.payment_status))+"</span></td>"+
+        "<td>"+(row.accepted_at?"Да · "+esc(date(row.accepted_at)):"Нет")+"</td>"+
+        "<td>"+(row.married_at?"Да · "+esc(date(row.married_at)):"Нет")+"</td>"+
+        "<td>"+esc(date(row.created_at))+"</td><td>"+esc(date(row.scheduled_at))+"</td></tr>";
+    }).join("")||"<tr><td colspan=\"7\">Заявок пока нет</td></tr>";
+  }
+  async function refresh(){
+    $("refreshBtn").disabled=true;$("rows").innerHTML="<tr><td colspan=\"7\">Загрузка…</td></tr>";
+    try{
+      var summary=await rpc("zags_admin_summary_v1",{});
+      if(Array.isArray(summary))summary=summary[0];
+      $("sTotal").textContent=fmt(summary&&summary.total);
+      $("sPending").textContent=fmt(summary&&summary.pending_partner);
+      $("sAccepted").textContent=fmt(summary&&summary.accepted);
+      $("sMarried").textContent=fmt(summary&&summary.married);
+      $("sPaid").textContent=fmt(summary&&summary.paid);
+      $("sPayPending").textContent=fmt(summary&&summary.payment_pending);
+      await loadRows();setStatus("appStatus","Данные обновлены.",false);
+    }catch(err){
+      setStatus("appStatus",String(err.message||"Не удалось загрузить данные").slice(0,220),true);
+      if(/401|JWT|войдите/i.test(String(err.message||""))){showLogin();setStatus("loginStatus","Сессия закончилась. Войдите снова.",true);}
+    }finally{$("refreshBtn").disabled=false}
+  }
+  $("loginForm").addEventListener("submit",login);
+  $("refreshBtn").addEventListener("click",refresh);
+  $("searchBtn").addEventListener("click",function(){loadRows().catch(function(err){setStatus("appStatus",String(err.message||"Поиск не выполнен"),true)})});
+  $("search").addEventListener("keydown",function(ev){if(ev.key==="Enter"){ev.preventDefault();$("searchBtn").click()}});
+  $("logoutBtn").addEventListener("click",async function(){
+    var current=session;showLogin();$("loginStatus").textContent="";
+    if(current&&current.access_token){try{await request("/auth/v1/logout",undefined,current.access_token)}catch(e){}}
+  });
+  if(!authorizedHost()){setStatus("loginStatus","Админка активируется только после публикации на yabylzdes.ru по HTTPS.",true);}
+})();
+</script>
+</body>
+</html>
