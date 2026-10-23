@@ -14,7 +14,8 @@ assert.match(config,/https:\/\/api\.smoke-tattoo\.ru/,'ZAGS must use the Beget A
 assert.match(config,/SUPABASE_ANON_KEY/,'only a public key should be in frontend configuration');
 assert.doesNotMatch(config,/service_role|SERVICE_ROLE|qgccfpkvzrimwqmqrxwq\.supabase\.co/i,'no EU/service key in ZAGS configuration');
 assert.match(siteConfig,/qgccfpkvzrimwqmqrxwq\.supabase\.co/,'the shared TATTOO PRICE/YBZ config must remain unchanged');
-assert.match(html,/paymentsEnabled:false/,'real ZAGS payments must remain disabled');
+assert.match(html,/paymentsEnabled:true/,'ZAGS checkout must be enabled on the public page');
+assert.match(edge,/ZAGS_PAYMENTS_ENABLED/,'server payment gate must stay configurable');
 assert.match(html,/\.\/config\.js/,'ZAGS must load its own regional config');
 assert.match(html,/zags_v2_action/,'ZAGS UI must call the Beget API');
 assert.equal((html.match(/emailRedirectTo:emailRedirectTo\(\)/g)||[]).length,2,'ZAGS sign-in and resend must return to ZAGS');
@@ -38,4 +39,4 @@ assert.match(edge,/zags_payment/);
 assert.match(edge,/https:\/\/securepay\.tinkoff\.ru\/v2/);
 assert.doesNotMatch(installer,/SUPABASE_SERVICE_ROLE_KEY\s*=/,'installer must not write or print server secrets');
 cp.execFileSync('bash',['-n','zags/beget/install-cutover.sh']);
-console.log('PASS: Russia-only ZAGS config, backend parity, server-only payment RPC, payment-off gate, and installer syntax');
+console.log('PASS: Russia-only ZAGS config, backend parity, server-only payment RPC, public checkout and server-side payment gate, and installer syntax');
