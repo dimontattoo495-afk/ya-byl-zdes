@@ -17,6 +17,11 @@ assert.match(siteConfig,/qgccfpkvzrimwqmqrxwq\.supabase\.co/,'the shared TATTOO 
 assert.match(html,/paymentsEnabled:false/,'real ZAGS payments must remain disabled');
 assert.match(html,/\.\/config\.js/,'ZAGS must load its own regional config');
 assert.match(html,/zags_v2_action/,'ZAGS UI must call the Beget API');
+assert.equal((html.match(/emailRedirectTo:emailRedirectTo\(\)/g)||[]).length,2,'ZAGS sign-in and resend must return to ZAGS');
+assert.match(html,/const emailRedirectTo=\(\)=>/,'ZAGS must build an app-specific auth return URL');
+assert.match(html,/zags_invite/,'pending invitation must survive email sign-in');
+assert.match(html,/authCallback&&!params\.has\('couple'\)/,'magic-link return must open the ZAGS account list');
+assert.match(html,/Откройте ссылку из письма/,'sign-in instructions must explain email link/code behavior');
 assert.match(homepage,/YBZ_ZAGS_CONFIG/,'public wedding news must use the Russian ZAGS endpoint');
 
 for(const action of ['create','invitation','accept','cancel','renew','list','get','public','wish','delete_wish','photo','share','yes']) {
