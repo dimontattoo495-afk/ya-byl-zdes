@@ -3,6 +3,8 @@ on:
   pull_request:
     paths:
       - 'zags/beget/007_admin_panel.sql'
+      - 'zags/beget/install-admin-panel.sh'
+      - 'zags/beget/007_ADMIN_INSTALL_RU.md'
       - 'zags/beget/ci/07_admin_fixture.sql'
       - 'zags/beget/ci/07_admin_test.sql'
       - '.github/workflows/zags-beget-admin.yml'
@@ -34,6 +36,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install PostgreSQL client
         run: sudo apt-get update && sudo apt-get install -y postgresql-client
+      - name: Check installer shell syntax
+        run: bash -n zags/beget/install-admin-panel.sh
       - name: Create isolated test fixture
         env:
           PGPASSWORD: postgres
