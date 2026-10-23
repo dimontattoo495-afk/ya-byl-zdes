@@ -1,0 +1,22 @@
+name: ZAGS Beget cutover checks
+on:
+  pull_request:
+    paths:
+      - 'zags/**'
+      - 'tests/zags-beget-*.cjs'
+      - '.github/workflows/zags-beget-cutover.yml'
+  workflow_dispatch:
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node tests/zags-beget-cutover.cjs
+      - run: node tests/zags-beget-payment-crypto.cjs
+      - run: node zags/service-rules-check.cjs
+      - run: node zags/demo-test-check.cjs

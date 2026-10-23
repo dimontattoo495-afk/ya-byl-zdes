@@ -56,7 +56,7 @@
     <h2 id="zags-title" style="font-size:clamp(28px,5vw,39px);margin:0 0 10px">Виртуальный ЗАГС</h2>
     <p style="color:#efdae0;max-width:700px;line-height:1.65;margin:0 0 20px">Шуточная история для двоих: создайте заявление, пригласите партнёра по личной ссылке и получите его согласие. Каждый входит со своей почтой.</p>
     <a href="./zags/" style="display:inline-block;padding:13px 20px;border-radius:10px;background:#e6b7c7;color:#2b202b;text-decoration:none;font-weight:800">Открыть Виртуальный ЗАГС ↗</a>
-    <p style="color:#c7abb7;font-size:12px;line-height:1.6;margin:16px 0 0">Это не государственная услуга. Оплата и проведение церемоний пока отключены. Данные тестовых заявлений сохраняются в Supabase.</p>
+    <p style="color:#c7abb7;font-size:12px;line-height:1.6;margin:16px 0 0">Это не государственная услуга. Оплата и проведение церемоний пока отключены. После перехода данные новых тестовых заявлений сохраняются на российском сервере.</p>
   </section>
 
   <section id="zags-news" style="margin:28px 0;padding:22px;border:1px solid #654655;border-radius:16px;background:#211923" hidden>
@@ -141,10 +141,14 @@
 })();
 </script>
 
+<script src="./zags/config.js"></script>
 <script>
 (async()=>{
  try{
-  const rows=await YBZ.rpc('zags_public_news');
+  const cfg=window.YBZ_ZAGS_CONFIG;
+  const response=await fetch(cfg.SUPABASE_URL+'/rest/v1/rpc/zags_public_news',{method:'POST',headers:{apikey:cfg.SUPABASE_ANON_KEY,Authorization:'Bearer '+cfg.SUPABASE_ANON_KEY,'Content-Type':'application/json'},body:'{}',cache:'no-store',signal:AbortSignal.timeout(10000)});
+  if(!response.ok)throw Error('ZAGS news unavailable');
+  const rows=await response.json();
   if(!Array.isArray(rows)||!rows.length)return;
   const block=document.getElementById('zags-news');
   const list=document.getElementById('zags-news-list');
