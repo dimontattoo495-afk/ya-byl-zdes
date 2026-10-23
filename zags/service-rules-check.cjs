@@ -19,7 +19,8 @@ const checks=[
  ["payment processor disclosed",privacy.includes('Т‑Банк')&&privacy.includes('Чеки Т‑Бизнеса')],
  ["no false prelaunch claims",!info.includes('платежи выключены')&&!info.includes('не является действующей публичной офертой')],
  ["both-participant consent",info.includes('согласия обоих участников')],
- ["offer checkout acceptance",html.includes('Нажимая «Оплатить»')||html.includes('условиями платной услуги')],
+ ["offer acceptance shown at checkout",html.includes('Нажимая «Оплатить», вы принимаете <a href="offer.html"')],
+ ["disabled backend path is honest",html.includes('Оплата сейчас временно недоступна. Деньги не списываются.')],
 ];
 for(const [name,pass] of checks)assert.ok(pass,name);
 assert.ok((info.match(/<article>/g)||[]).length===4);
