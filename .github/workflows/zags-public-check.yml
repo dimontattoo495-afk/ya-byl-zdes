@@ -32,18 +32,23 @@ jobs:
           (async()=> {
             const base='https://yabylzdes.ru/zags/';
             const paths=['','offer.html','how-it-works.html','privacy.html'];
-            for(let i=0;i<4;i++){
-              const pages=await Promise.all(paths.map(async p=>{
-                const r=await fetch(base+p,{redirect:'follow',signal:AbortSignal.timeout(12000)});
-                if(!r.ok)throw Error(p+' HTTP '+r.status);
-                return [p,await r.text()];
-              }));
-              const m=Object.fromEntries(pages);
-              if(m[''].includes('ТЕСТОВАЯ ВЕРСИЯ')||!m[''].includes('paymentsEnabled:true'))throw Error('Published ZAGS is still in test mode');
-              if(!m['offer.html'].includes('149 ₽')||!m['offer.html'].includes('ОГРНИП 320508100007401'))throw Error('Public ZAGS offer is missing required details');
-              if(!m['privacy.html'].includes('Beget в России')||!m['privacy.html'].includes('Т‑Банк'))throw Error('Public privacy policy is incomplete');
-              console.log('PASS: live ZAGS checkout and public terms, privacy and how-it-works pages');
-              return;
+            let last='Pages are still publishing';
+            for(let i=0;i<8;i++){
+              try{
+                const pages=await Promise.all(paths.map(async p=>{
+                  const r=await fetch(base+p,{redirect:'follow',signal:AbortSignal.timeout(12000)});
+                  if(!r.ok)throw Error(p+' HTTP '+r.status);
+                  return [p,await r.text()];
+                }));
+                const m=Object.fromEntries(pages);
+                if(m[''].includes('ТЕСТОВАЯ ВЕРСИЯ')||!m[''].includes('paymentsEnabled:true'))throw Error('Published ZAGS is still in test mode');
+                if(!m['offer.html'].includes('149 ₽')||!m['offer.html'].includes('ОГРНИП 320508100007401'))throw Error('Public ZAGS offer is missing required details');
+                if(!m['privacy.html'].includes('Beget в России')||!m['privacy.html'].includes('Т‑Банк'))throw Error('Public privacy policy is incomplete');
+                console.log('PASS: live ZAGS checkout and public terms, privacy and how-it-works pages');
+                return;
+              }catch(e){last=e.message;console.log('Publish check attempt '+(i+1)+': '+last);}
+              if(i<7)await new Promise(resolve=>setTimeout(resolve,10000));
             }
+            throw Error(last);
           })().catch(e=>{console.error(e.message);process.exit(1)});
           JS
