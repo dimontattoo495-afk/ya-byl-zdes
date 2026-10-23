@@ -5,6 +5,7 @@ on:
     paths:
       - '.github/workflows/domain-check.yml'
       - 'CNAME'
+      - '.github/workflows/deploy-pages.yml'
   workflow_dispatch:
 jobs:
   check:
