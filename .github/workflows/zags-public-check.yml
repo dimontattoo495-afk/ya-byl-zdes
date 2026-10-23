@@ -1,4 +1,4 @@
-name: Verify published ZAGS
+name: Verify published ZAGS launch
 on:
   push:
     branches: [main]
@@ -10,42 +10,40 @@ on:
 jobs:
   published-zags:
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 4
     permissions:
       contents: read
     steps:
       - uses: actions/checkout@v4
-      - name: Verify source safety
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify source launch readiness
         run: |
           test -f zags/index.html
-          grep -q 'paymentsEnabled:false' zags/index.html
-          grep -q 'ТЕСТОВАЯ ВЕРСИЯ' zags/index.html
-          grep -q 'noindex,nofollow,noarchive' zags/index.html
-      - name: Check GitHub Pages HTTPS
+          test -f zags/offer.html
+          grep -q 'paymentsEnabled:true' zags/index.html
+          grep -q 'НЕ ГОСУДАРСТВЕННЫЙ ЗАГС' zags/index.html
+          node zags/service-rules-check.cjs
+      - name: Check published ZAGS pages
         shell: bash
         run: |
           node - <<'JS'
-          (async()=>{
-            const url='https://dimontattoo495-afk.github.io/ya-byl-zdes/zags/';
+          (async()=> {
+            const base='https://yabylzdes.ru/zags/';
+            const paths=['','offer.html','how-it-works.html','privacy.html'];
             for(let i=0;i<4;i++){
-              const r=await fetch(url,{redirect:'follow',signal:AbortSignal.timeout(12000)});
-              console.log('GitHub Pages response HTTP '+r.status);
-              if(r.ok){
-                const html=await r.text();
-                if(!html.includes('paymentsEnabled:false')||!html.includes('ТЕСТОВАЯ ВЕРСИЯ'))throw Error('Wrong page or payments unsafe');
-                const home=await fetch('https://dimontattoo495-afk.github.io/ya-byl-zdes/',{signal:AbortSignal.timeout(12000)});
-                if(!home.ok)throw Error('Main site homepage HTTP '+home.status);
-                const front=await home.text();
-                if(!front.includes('href="./zags/"')||!front.includes('id="zags-title"'))throw Error('Main site missing new ZAGS navigation');
-                const policy=await fetch('https://dimontattoo495-afk.github.io/ya-byl-zdes/zags/privacy.html',{signal:AbortSignal.timeout(12000)});
-                if(!policy.ok)throw Error('ZAGS-specific privacy page HTTP '+policy.status);
-                const policyHtml=await policy.text();
-                if(!policyHtml.includes('Данные в тестовом'))throw Error('Incorrect ZAGS privacy notice');
-                console.log('PASS: live homepage link, virtual ZAGS HTTPS and privacy notice, payments disabled');
-                return;
-              }
-              if(i<3)await new Promise(resolve=>setTimeout(resolve,12000));
+              const pages=await Promise.all(paths.map(async p=>{
+                const r=await fetch(base+p,{redirect:'follow',signal:AbortSignal.timeout(12000)});
+                if(!r.ok)throw Error(p+' HTTP '+r.status);
+                return [p,await r.text()];
+              }));
+              const m=Object.fromEntries(pages);
+              if(m[''].includes('ТЕСТОВАЯ ВЕРСИЯ')||!m[''].includes('paymentsEnabled:true'))throw Error('Published ZAGS is still in test mode');
+              if(!m['offer.html'].includes('149 ₽')||!m['offer.html'].includes('ОГРНИП 320508100007401'))throw Error('Public ZAGS offer is missing required details');
+              if(!m['privacy.html'].includes('Beget в России')||!m['privacy.html'].includes('Т‑Банк'))throw Error('Public privacy policy is incomplete');
+              console.log('PASS: live ZAGS checkout and public terms, privacy and how-it-works pages');
+              return;
             }
-            throw Error('Published GitHub Pages site not reachable');
           })().catch(e=>{console.error(e.message);process.exit(1)});
           JS

@@ -1,9 +1,11 @@
-name: ZAGS prelaunch information and consent
+name: ZAGS launch information, offer and consent
 on:
   pull_request:
     paths:
       - 'zags/index.html'
       - 'zags/how-it-works.html'
+      - 'zags/privacy.html'
+      - 'zags/offer.html'
       - 'zags/service-rules-check.cjs'
       - '.github/workflows/zags-service-rules.yml'
   workflow_dispatch:
