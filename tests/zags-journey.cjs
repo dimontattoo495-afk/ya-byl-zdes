@@ -24,12 +24,12 @@ const base='http://127.0.0.1:8765/';
       rpc:(method,body)=>({
         abortSignal:async()=>{
           state.apiActions.push(method+':'+(body?.p_action||''));
-          if(method==='zags_cancel_unaccepted'){
-            if(body.p_id!==creatorId||state.couple?.has_partner)throw Error('Test cancellation rejected');
+          if(method==='zags_v2_action'&&body.p_action==='cancel'){
+            if(body.p_data?.id!==creatorId||state.couple?.has_partner)throw Error('Test cancellation rejected');
             state.couple=null;
             return {data:true,error:null};
           }
-          if(method!=='zags_action')return {data:null,error:{message:'Unknown RPC'}};
+          if(method!=='zags_v2_action')return {data:null,error:{message:'Unknown RPC'}};
           const a=body.p_action,data=body.p_data||{};
           if(a==='create'){
             state.serial++;
@@ -83,7 +83,7 @@ const base='http://127.0.0.1:8765/';
   await page.click('#cancel-request');
   await page.getByText('Мои истории',{exact:true}).waitFor({timeout:10000});
   assert.match(await page.locator('#panel').textContent(),/первое приглашение/);
-  assert.equal(await page.evaluate(()=>window.__zagsTestState.apiActions.filter(x=>x.startsWith('zags_cancel_unaccepted')).length),1);
+  assert.equal(await page.evaluate(()=>window.__zagsTestState.apiActions.filter(x=>x==='zags_v2_action:cancel').length),1);
   console.log('PASS ZAGS: owner confirms deletion of unpaid, unaccepted invitation, and list is updated');
   await page.click('#back');
   await page.click('#demo');
