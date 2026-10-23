@@ -1,0 +1,54 @@
+name: ZAGS Beget admin authorization
+on:
+  pull_request:
+    paths:
+      - 'zags/beget/007_admin_panel.sql'
+      - 'zags/beget/install-admin-panel.sh'
+      - 'zags/beget/007_ADMIN_INSTALL_RU.md'
+      - 'zags/beget/ci/07_admin_fixture.sql'
+      - 'zags/beget/ci/07_admin_test.sql'
+      - '.github/workflows/zags-beget-admin.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'zags/beget/007_admin_panel.sql'
+      - 'zags/beget/install-admin-panel.sh'
+      - 'zags/beget/007_ADMIN_INSTALL_RU.md'
+      - 'zags/beget/ci/07_admin_fixture.sql'
+      - 'zags/beget/ci/07_admin_test.sql'
+      - '.github/workflows/zags-beget-admin.yml'
+jobs:
+  postgres-test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: zags_admin_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d zags_admin_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+      - name: Check installer shell syntax
+        run: bash -n zags/beget/install-admin-panel.sh
+      - name: Create isolated test fixture
+        env:
+          PGPASSWORD: postgres
+        run: psql -h 127.0.0.1 -U postgres -d zags_admin_test -v ON_ERROR_STOP=1 -f zags/beget/ci/07_admin_fixture.sql
+      - name: Apply admin migration
+        env:
+          PGPASSWORD: postgres
+        run: psql -h 127.0.0.1 -U postgres -d zags_admin_test -v ON_ERROR_STOP=1 -f zags/beget/007_admin_panel.sql
+      - name: Verify authorization and data boundaries
+        env:
+          PGPASSWORD: postgres
+        run: psql -h 127.0.0.1 -U postgres -d zags_admin_test -v ON_ERROR_STOP=1 -f zags/beget/ci/07_admin_test.sql
