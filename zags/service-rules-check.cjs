@@ -3,27 +3,25 @@ const fs=require('node:fs');
 const html=fs.readFileSync('zags/index.html','utf8');
 const info=fs.readFileSync('zags/how-it-works.html','utf8');
 const privacy=fs.readFileSync('zags/privacy.html','utf8');
-const required=[
- ["payments off",html.includes('paymentsEnabled:false')],
- ["page not indexed",info.includes('noindex,nofollow,noarchive')],
- ["not an offer",info.includes('не является действующей публичной офертой')],
- ["not state registry",info.includes('не регистрирует настоящий брак')],
- ["not accepting money",info.includes('Реальная оплата церемонии и выдача оплаченных свидетельств выключены')],
- ["Russian ZAGS data location disclosed",info.includes('сервере Beget в России')],
- ["operator contacts linked",info.includes('../contacts.html')],
- ["legacy EU test data disclosed",privacy.includes('европейском проекте Supabase')],
- ["no real charge",info.includes('сейчас они не оплачиваются')],
- ["both-person approval",info.includes('обоих')],
- ["prelaunch rule link",html.includes('href="how-it-works.html"')],
- ["create consent has information",html.includes('Хочу пригласить партнёра на шуточную церемонию. ${disclaimer} Ознакомлен(а)')],
- ["accept consent has information",html.includes('Я согласен на шуточную виртуальную свадьбу. ${disclaimer} Ознакомлен(а)')],
- ["no change to paid ZAGS",html.includes("if(!cfg.paymentsEnabled)throw Error('Оплата свадеб ещё не подключена")],
- ["no active payment promise",!info.includes('Реальные платежи принимаются')],
+const offer=fs.readFileSync('zags/offer.html','utf8');
+const checks=[
+ ["live checkout enabled",html.includes('paymentsEnabled:true')],
+ ["test banner removed",!html.includes('ТЕСТОВАЯ ВЕРСИЯ')],
+ ["not an official registry",html.includes('НЕ ГОСУДАРСТВЕННЫЙ ЗАГС')],
+ ["prices disclosed",html.includes('149 <small>₽</small>')&&html.includes('299 <small>₽</small>')&&html.includes('499 <small>₽</small>')],
+ ["public offer linked",html.includes('href="offer.html"')],
+ ["paid-service terms published",offer.includes('Условия платной виртуальной церемонии')],
+ ["seller details present",offer.includes('ИНН 500404099944')&&offer.includes('ОГРНИП 320508100007401')],
+ ["consumer rights preserved",offer.includes('Права потребителя, установленные законом, настоящими условиями не ограничиваются')],
+ ["refund path published",offer.includes('фактически понесённых расходов')&&offer.includes('dimontatoo@yandex.ru')],
+ ["privacy policy linked",html.includes('href="privacy.html"')&&info.includes('href="privacy.html"')],
+ ["Russia API disclosed",privacy.includes('api.smoke-tattoo.ru')&&privacy.includes('Beget в России')],
+ ["payment processor disclosed",privacy.includes('Т‑Банк')&&privacy.includes('Чеки Т‑Бизнеса')],
+ ["no false prelaunch claims",!info.includes('платежи выключены')&&!info.includes('не является действующей публичной офертой')],
+ ["both-participant consent",info.includes('согласия обоих участников')],
+ ["offer acceptance shown at checkout",html.includes('Нажимая «Оплатить», вы принимаете <a href="offer.html"')],
+ ["disabled backend path is honest",html.includes('Оплата сейчас временно недоступна. Деньги не списываются.')],
 ];
-for(const [name,passed] of required)assert.ok(passed,name);
-assert.match(info,/<a href="privacy\.html">/);
-assert.match(info,/<a href="\.\.\/contacts\.html">/);
-assert.match(html,/<footer>.*?<a href="how-it-works\.html">/s);
-assert.match(info,/<table class="prices">/);
+for(const [name,pass] of checks)assert.ok(pass,name);
 assert.ok((info.match(/<article>/g)||[]).length===4);
-console.log('PASS: 15 prelaunch information, privacy, user-consent and payment-lock assertions');
+console.log('PASS: '+checks.length+' ZAGS live-launch, offer, privacy and consent checks');
