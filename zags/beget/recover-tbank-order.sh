@@ -85,11 +85,24 @@ docker exec -i supabase-db pg_restore --list < "$db_backup" >/dev/null || fail '
 raw="https://raw.githubusercontent.com/dimontattoo495-afk/ya-byl-zdes/$rev"
 curl -fsSL --retry 2 --max-time 60 "$raw/zags/beget/functions/zags-payment/index.ts" -o "$tmp/index.ts" || fail 'Could not download the reviewed payment function'
 grep -q 'Deno.createHttpClient' "$tmp/index.ts" || fail 'The pinned function does not contain the verified CA client fix'
+python3 - "$tmp/index.ts" "$tmp/tbank-ca.pem" "$tmp/index.rendered.ts" <<'PY'
+import json, re, sys
+source_path, ca_path, output_path = sys.argv[1:]
+source = open(source_path, encoding='utf-8').read()
+pem = open(ca_path, encoding='ascii').read()
+certs = re.findall(r'-----BEGIN CERTIFICATE-----[\\s\\S]+?-----END CERTIFICATE-----', pem)
+marker = '"__TBANK_CA_CERTS_JSON__"'
+if len(certs) < 2 or source.count(marker) != 1:
+    raise SystemExit('STOP: expected a source marker and two CA certificates')
+source = source.replace(marker, json.dumps(json.dumps(certs)))
+open(output_path, 'w', encoding='utf-8').write(source)
+PY
+grep -Fq '"__TBANK_CA_CERTS_JSON__"' "$tmp/index.rendered.ts" && fail 'CA bundle was not embedded into the payment function'
 cp -a "$functions_source/zags-payment/index.ts" "$backup_dir/zags-payment-index-before-tbank-ca-$stamp.ts"
 cp -a "$functions_source/zags-payment/tbank-ca.pem" "$backup_dir/zags-payment-ca-before-tbank-ca-$stamp.pem" 2>/dev/null || true
 
 install -m 0644 "$tmp/tbank-ca.pem" "$functions_source/zags-payment/tbank-ca.pem"
-install -m 0644 "$tmp/index.ts" "$functions_source/zags-payment/index.ts"
+install -m 0644 "$tmp/index.rendered.ts" "$functions_source/zags-payment/index.ts"
 
 msg 'Restarting only the Supabase Edge Functions service to load the official CA bundle...'
 (cd "$compose_dir" && docker compose restart functions --no-deps) || fail 'Edge Functions restart failed; backup is available at '"$db_backup"
