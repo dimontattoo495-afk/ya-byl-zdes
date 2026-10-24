@@ -48,8 +48,14 @@ try:
 except urllib.error.HTTPError as error:
     print(json.dumps({'orderId': order_id, 'httpStatus': error.code, 'success': False}, ensure_ascii=False, indent=2))
     sys.exit(2)
-except Exception:
-    print('STOP: T-Bank status request failed; no changes made')
+except Exception as error:
+    reason = getattr(error, 'reason', error)
+    print(json.dumps({
+        'orderId': order_id,
+        'errorType': type(error).__name__,
+        'reason': str(reason)[:240],
+        'noChangesMade': True
+    }, ensure_ascii=False, indent=2))
     sys.exit(2)
 payments = []
 for p in data.get('Payments') or []:
