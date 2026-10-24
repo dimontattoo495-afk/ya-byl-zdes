@@ -9,7 +9,7 @@ fail(){ printf 'STOP (read-only check only): %s\n' "$*" >&2; exit 1; }
 command -v docker >/dev/null || fail 'Docker is unavailable'
 
 couple_id="$1"
-row="$(docker exec supabase-db psql -qAt -X -v ON_ERROR_STOP=1 -U postgres -d postgres -F '|' -c "SELECT payment_status,coalesce(order_id::text,''),coalesce(payment_id,''),(payment_url IS NOT NULL)::text,coalesce(extract(epoch FROM (now()-payment_created_at))::bigint,0) FROM zags.couples WHERE id='\${couple_id}';")" || fail 'Could not read the ZAGS order'
+row="$(docker exec supabase-db psql -qAt -X -v ON_ERROR_STOP=1 -U postgres -d postgres -F '|' -c "SELECT payment_status,coalesce(order_id::text,''),coalesce(payment_id,''),(payment_url IS NOT NULL)::text,coalesce(extract(epoch FROM (now()-payment_created_at))::bigint,0) FROM zags.couples WHERE id='${couple_id}';")" || fail 'Could not read the ZAGS order'
 [[ -n "$row" ]] || fail 'The couple record was not found'
 IFS='|' read -r status order_id payment_id has_url age_seconds <<<"$row"
 [[ "$status" == pending ]] || fail "Order status is '$status', not pending; no changes made"
