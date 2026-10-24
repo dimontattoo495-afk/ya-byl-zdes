@@ -37,18 +37,17 @@ async function db(action: string, data: Record<string, unknown>) {
   return await r.json();
 }
 
+const tbankCaCertsJson = "__TBANK_CA_CERTS_JSON__";
 let tbankHttpClient: ReturnType<typeof Deno.createHttpClient> | null = null;
 
 async function getTbankHttpClient() {
   if (!tbankHttpClient) {
-    const pem = await Deno.readTextFile('/home/deno/functions/zags-payment/tbank-ca.pem');
-    const caCerts = pem.match(/-----BEGIN CERTIFICATE-----[\s\S]+?-----END CERTIFICATE-----/g) || [];
+    const caCerts = JSON.parse(tbankCaCertsJson) as string[];
     if (caCerts.length < 2) throw Error('Не загружены сертификаты Т-Банка');
     tbankHttpClient = Deno.createHttpClient({ caCerts });
   }
   return tbankHttpClient;
 }
-
 async function bank(method: string, data: Record<string, unknown>) {
   const payload = { ...data, TerminalKey: terminal };
   const r = await fetch(`https://securepay.tinkoff.ru/v2/${method}`, {
