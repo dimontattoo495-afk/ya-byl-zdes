@@ -36,12 +36,14 @@ grep -Fq 'client: await getTbankHttpClient(),' "$tmp" || fail 'Expected T-Bank H
 cp -a "$functions_source/zags-payment/index.ts" "$backup"
 install -m 0644 "$tmp" "$functions_source/zags-payment/index.ts"
 printf 'Installed reviewed source; backup: %s\n' "$backup"
+started="$(date +%s)"
 (cd "$compose_dir" && docker compose restart functions --no-deps) || fail 'Could not restart functions service'
-sleep 3
-if docker logs --since 20s "$container" 2>&1 | grep -E 'failed to parse|Expected unicode escape'; then
+sleep 4
+recent_logs="$(docker logs --since "$started" "$container" 2>&1 || true)"
+if grep -E 'failed to parse|Expected unicode escape' <<<"$recent_logs"; then
   fail 'Function still reports a parser error; source backup is available'
 fi
 printf '\nRecent function startup logs:\n'
-docker logs --since 20s "$container" 2>&1 | grep -E 'serving the request with /home/deno/functions/zags-payment|worker boot error' | tail -n 12 || true
+grep -E 'serving the request with /home/deno/functions/zags-payment|worker boot error' <<<"$recent_logs" | tail -n 12 || true
 printf '\nCurrent ZAGS payment service container: %s\n' "$container"
 printf 'Parser error did not recur. No database rows or payments were changed.\n'
