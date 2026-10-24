@@ -12,13 +12,12 @@ order_id="$1"
 functions_container=""
 while IFS= read -r name; do
   [[ -n "$name" ]] || continue
-  if [[ "$(docker inspect -f '{{ index .Config.Labels \"com.docker.compose.service\" }}' "$name" 2>/dev/null || true)" == functions ]]; then
+  if docker exec "$name" deno eval --allow-env=ZAGS_TBANK_TERMINAL_KEY,ZAGS_TBANK_PASSWORD 'if (!Deno.env.get("ZAGS_TBANK_TERMINAL_KEY") || !Deno.env.get("ZAGS_TBANK_PASSWORD")) Deno.exit(1);' >/dev/null 2>&1; then
     functions_container="$name"
     break
   fi
 done < <(docker ps --format '{{.Names}}')
-[[ -n "$functions_container" ]] || fail 'Could not find the existing functions container'
-
+[[ -n "$functions_container" ]] || fail 'Could not find a running container with ZAGS payment settings'
 printf 'Checking T-Bank OrderId %s (read-only).\n' "$order_id"
 docker exec -e ZAGS_CHECK_ORDER_ID="$order_id" "$functions_container" deno eval \
   --allow-net=securepay.tinkoff.ru:443 \
