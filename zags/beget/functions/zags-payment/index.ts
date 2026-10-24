@@ -51,7 +51,8 @@ async function getTbankHttpClient() {
 
 async function bank(method: string, data: Record<string, unknown>) {
   const payload = { ...data, TerminalKey: terminal };
-  const r = await fetch(`https://securepay.tinkoff.ru/v2/${method}`, {\n    client: await getTbankHttpClient(),
+  const r = await fetch(`https://securepay.tinkoff.ru/v2/${method}`, {
+    client: await getTbankHttpClient(),
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ ...payload, Token: await makeToken(payload, password) }),
