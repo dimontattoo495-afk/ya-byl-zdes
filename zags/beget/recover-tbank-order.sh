@@ -7,9 +7,10 @@ fail(){ printf 'STOP (no payment created): %s\n' "$*" >&2; exit 1; }
 msg(){ printf 'ZAGS recovery: %s\n' "$*"; }
 
 [[ "$(id -u)" == 0 ]] || fail 'Run this from the Beget root SSH shell'
-[[ $# -eq 2 && "$1" =~ ^[a-f0-9]{40}$ && "$2" =~ ^[0-9a-fA-F-]{36}$ ]] || fail 'Expected reviewed commit SHA and one T-Bank OrderId'
+[[ $# -eq 2 && "$1" =~ ^[a-f0-9]{40}$ ]] || fail 'Expected reviewed commit SHA and a T-Bank OrderId or latest'
 rev="$1"
 order_id="$2"
+if [[ "$order_id" != latest && ! "$order_id" =~ ^[0-9a-fA-F-]{36}$ ]]; then fail 'OrderId format is invalid'; fi
 for command in docker curl openssl python3 update-ca-certificates; do command -v "$command" >/dev/null || fail "Missing $command"; done
 
 functions_container="$(docker ps --format '{{.Names}}' | while read -r name; do
@@ -20,6 +21,11 @@ compose_dir="$(docker inspect -f '{{ index .Config.Labels "com.docker.compose.pr
 functions_source="$(docker inspect -f '{{range .Mounts}}{{if eq .Destination "/home/deno/functions"}}{{.Source}}{{end}}{{end}}' "$functions_container")"
 [[ -n "$compose_dir" && -d "$compose_dir" ]] || fail 'Could not locate the Supabase Compose project'
 [[ -n "$functions_source" && -d "$functions_source/zags-payment" ]] || fail 'Could not locate the mounted ZAGS payment function'
+if [[ "$order_id" == latest ]]; then
+  order_id="$(docker exec supabase-db psql -qAt -X -v ON_ERROR_STOP=1 -U postgres -d postgres -c "SELECT order_id::text FROM zags.couples WHERE payment_status='pending' AND order_id IS NOT NULL AND payment_id IS NULL AND payment_url IS NULL ORDER BY payment_created_at DESC NULLS LAST LIMIT 1;")" || fail 'Could not find the latest pending ZAGS order'
+  [[ "$order_id" =~ ^[0-9a-fA-F-]{36}$ ]] || fail 'No pending reservation without saved payment details was found'
+  msg "Selected the latest pending order: $order_id"
+fi
 (cd "$compose_dir" && docker compose config --quiet) || fail 'Supabase Compose configuration did not validate'
 
 tmp="$(mktemp -d /root/zags-tbank-recovery.XXXXXX)"
