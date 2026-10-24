@@ -10,6 +10,7 @@ on:
       - 'zags/auth-email-check.cjs'
       - 'zags/email-templates/**'
       - 'zags/beget/009_AUTH_EMAIL_FIX_RU.md'
+      - 'zags/beget/fix-auth-email.sh'
       - '.github/workflows/zags-service-rules.yml'
   workflow_dispatch:
 jobs:
@@ -24,3 +25,4 @@ jobs:
           node-version: '22'
       - run: node zags/service-rules-check.cjs
       - run: node zags/auth-email-check.cjs
+      - run: bash -n zags/beget/fix-auth-email.sh
