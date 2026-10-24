@@ -90,7 +90,7 @@ import json, re, sys
 source_path, ca_path, output_path = sys.argv[1:]
 source = open(source_path, encoding='utf-8').read()
 pem = open(ca_path, encoding='ascii').read()
-certs = re.findall(r'-----BEGIN CERTIFICATE-----[\\s\\S]+?-----END CERTIFICATE-----', pem)
+certs = re.findall(r'-----BEGIN CERTIFICATE-----[\s\S]+?-----END CERTIFICATE-----', pem)
 marker = '"__TBANK_CA_CERTS_JSON__"'
 if len(certs) < 2 or source.count(marker) != 1:
     raise SystemExit('STOP: expected a source marker and two CA certificates')
