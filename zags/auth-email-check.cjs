@@ -9,7 +9,7 @@ assert.equal(page.split('signInWithOtp(').length - 1, 2, 'signup and resend shou
 assert.equal(page.split("data:{auth_app_name:'Виртуальный ЗАГС «Я был здесь»'}").length - 1, 2, 'signup and resend should identify the ZAGS app');
 assert.equal(page.split('emailRedirectTo:emailRedirectTo()').length - 1, 2, 'signup and resend should pass the ZAGS return URL');
 assert.ok(page.includes("verifyOtp({email,token:$('#otp').value.trim(),type:'email'})"), 'the submitted code should be verified as email OTP');
-assert.ok(page.includes('function emailRedirectTo('), 'the page should construct a return URL');
+assert.ok(page.includes('const emailRedirectTo=()=>'), 'the page should construct a return URL');
 
 for (const [name, template] of [['confirmation', confirmation], ['magic link', magicLink]]) {
   assert.ok(template.includes('{{ .Token }}'), name + ' email should show the OTP code');
