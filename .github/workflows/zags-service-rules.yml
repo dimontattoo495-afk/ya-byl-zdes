@@ -1,4 +1,4 @@
-name: ZAGS launch information, offer and consent
+name: ZAGS launch information, offer, consent and email
 on:
   pull_request:
     paths:
@@ -7,6 +7,9 @@ on:
       - 'zags/privacy.html'
       - 'zags/offer.html'
       - 'zags/service-rules-check.cjs'
+      - 'zags/auth-email-check.cjs'
+      - 'zags/email-templates/**'
+      - 'zags/beget/009_AUTH_EMAIL_FIX_RU.md'
       - '.github/workflows/zags-service-rules.yml'
   workflow_dispatch:
 jobs:
@@ -20,3 +23,4 @@ jobs:
         with:
           node-version: '22'
       - run: node zags/service-rules-check.cjs
+      - run: node zags/auth-email-check.cjs
