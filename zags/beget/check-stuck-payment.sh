@@ -13,7 +13,7 @@ order_id="$1"
 row="$(docker exec supabase-db psql -qAt -X -v ON_ERROR_STOP=1 -U postgres -d postgres -F '|' -c "SELECT payment_status,coalesce(payment_id,''),(payment_url IS NOT NULL)::text,coalesce(extract(epoch FROM (now()-payment_created_at))::bigint,0) FROM zags.couples WHERE order_id='${order_id}'::uuid;")" || fail 'Could not verify the ZAGS order in the database'
 [[ -n "$row" ]] || fail 'The order was not found in the ZAGS database'
 IFS='|' read -r status payment_id has_url age_seconds <<<"$row"
-[[ "$status" == pending && -z "$payment_id" && "$has_url" == f ]] || fail 'Order is no longer pending without a payment link; no changes made'
+[[ "$status" == pending && -z "$payment_id" && "$has_url" == false ]] || fail 'Order is no longer pending without a payment link; no changes made'
 (( age_seconds >= 300 )) || fail 'The order is less than five minutes old; wait before checking'
 
 python3 - "$order_id" <<'PY'
