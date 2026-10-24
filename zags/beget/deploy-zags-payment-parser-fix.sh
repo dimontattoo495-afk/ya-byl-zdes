@@ -2,11 +2,12 @@
 # Deploy the reviewed ZAGS payment parser fix only. No database or payment changes.
 set -Eeuo pipefail
 umask 077
-REV='29d1e22d180d64b160357c867404de93a9311e55'
+REV='abcb062808e7358b5d254b54f444e5e3ccc21a30'
 fail(){ printf 'STOP: %s\n' "$*" >&2; exit 1; }
 [[ "$(id -u)" == 0 ]] || fail 'Run in the Beget root SSH shell'
 command -v docker >/dev/null || fail 'docker is missing'
 command -v curl >/dev/null || fail 'curl is missing'
+command -v python3 >/dev/null || fail 'python3 is missing'
 
 container=''
 while IFS= read -r name; do
@@ -24,19 +25,31 @@ functions_source="$(docker inspect -f '{{range .Mounts}}{{if eq .Destination "/h
 [[ -n "$functions_source" && -d "$functions_source/zags-payment" ]] || fail 'Could not locate the mounted ZAGS payment function'
 (cd "$compose_dir" && docker compose config --quiet) || fail 'Supabase Compose config validation failed'
 
-tmp="$(mktemp)"
+tmp="$(mktemp -d)"
 backup="/root/backups/zags-payment-index-before-parser-fix-$(date -u +%Y%m%dT%H%M%SZ).ts"
 mkdir -p /root/backups
-trap 'rm -f "$tmp"' EXIT
+trap 'rm -rf "$tmp"' EXIT
 url="https://raw.githubusercontent.com/dimontattoo495-afk/ya-byl-zdes/$REV/zags/beget/functions/zags-payment/index.ts"
-curl -fsSL --retry 2 --max-time 60 "$url" -o "$tmp" || fail 'Could not download the pinned fixed source'
-grep -Fq 'Deno.createHttpClient' "$tmp" || fail 'Downloaded file does not include the T-Bank CA setup'
-grep -Fq "Deno.readTextFile('/home/deno/functions/zags-payment/tbank-ca.pem')" "$tmp" || fail 'Downloaded source does not use the mounted CA path'
+curl -fsSL --retry 2 --max-time 60 "$url" -o "$tmp/index.ts" || fail 'Could not download the pinned fixed source'
+grep -Fq 'Deno.createHttpClient' "$tmp/index.ts" || fail 'Downloaded file does not include the T-Bank CA setup'
 [[ -s "$functions_source/zags-payment/tbank-ca.pem" ]] || fail 'T-Bank CA bundle is missing from the mounted function directory'
-if grep -Fq '\n    client:' "$tmp"; then fail 'The parser error is still present in the downloaded file'; fi
-grep -Fq 'client: await getTbankHttpClient(),' "$tmp" || fail 'Expected T-Bank HTTP client line is missing'
+python3 - "$tmp/index.ts" "$functions_source/zags-payment/tbank-ca.pem" "$tmp/index.rendered.ts" <<'PY'
+import json, re, sys
+source_path, ca_path, output_path = sys.argv[1:]
+source = open(source_path, encoding='utf-8').read()
+pem = open(ca_path, encoding='ascii').read()
+certs = re.findall(r'-----BEGIN CERTIFICATE-----[\s\S]+?-----END CERTIFICATE-----', pem)
+marker = '"__TBANK_CA_CERTS_JSON__"'
+if len(certs) < 2 or source.count(marker) != 1:
+    raise SystemExit('STOP: expected a source marker and two CA certificates')
+source = source.replace(marker, json.dumps(json.dumps(certs)))
+open(output_path, 'w', encoding='utf-8').write(source)
+PY
+grep -Fq '"__TBANK_CA_CERTS_JSON__"' "$tmp/index.rendered.ts" && fail 'CA bundle was not embedded into the payment function'
+if grep -Fq '\n    client:' "$tmp/index.rendered.ts"; then fail 'The parser error is still present in the downloaded file'; fi
+grep -Fq 'client: await getTbankHttpClient(),' "$tmp/index.rendered.ts" || fail 'Expected T-Bank HTTP client line is missing'
 cp -a "$functions_source/zags-payment/index.ts" "$backup"
-install -m 0644 "$tmp" "$functions_source/zags-payment/index.ts"
+install -m 0644 "$tmp/index.rendered.ts" "$functions_source/zags-payment/index.ts"
 printf 'Installed reviewed source; backup: %s\n' "$backup"
 started="$(date +%s)"
 (cd "$compose_dir" && docker compose restart functions --no-deps) || fail 'Could not restart functions service'
