@@ -41,7 +41,7 @@ let tbankHttpClient: ReturnType<typeof Deno.createHttpClient> | null = null;
 
 async function getTbankHttpClient() {
   if (!tbankHttpClient) {
-    const pem = await Deno.readTextFile(new URL('./tbank-ca.pem', import.meta.url));
+    const pem = await Deno.readTextFile('/home/deno/functions/zags-payment/tbank-ca.pem');
     const caCerts = pem.match(/-----BEGIN CERTIFICATE-----[\s\S]+?-----END CERTIFICATE-----/g) || [];
     if (caCerts.length < 2) throw Error('Не загружены сертификаты Т-Банка');
     tbankHttpClient = Deno.createHttpClient({ caCerts });
