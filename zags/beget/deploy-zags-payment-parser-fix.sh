@@ -2,7 +2,7 @@
 # Deploy the reviewed ZAGS payment parser fix only. No database or payment changes.
 set -Eeuo pipefail
 umask 077
-REV='883eae97943fdc53c16f3c1715d8a18de4d46733'
+REV='29d1e22d180d64b160357c867404de93a9311e55'
 fail(){ printf 'STOP: %s\n' "$*" >&2; exit 1; }
 [[ "$(id -u)" == 0 ]] || fail 'Run in the Beget root SSH shell'
 command -v docker >/dev/null || fail 'docker is missing'
