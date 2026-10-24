@@ -31,6 +31,8 @@ trap 'rm -f "$tmp"' EXIT
 url="https://raw.githubusercontent.com/dimontattoo495-afk/ya-byl-zdes/$REV/zags/beget/functions/zags-payment/index.ts"
 curl -fsSL --retry 2 --max-time 60 "$url" -o "$tmp" || fail 'Could not download the pinned fixed source'
 grep -Fq 'Deno.createHttpClient' "$tmp" || fail 'Downloaded file does not include the T-Bank CA setup'
+grep -Fq "Deno.readTextFile('/home/deno/functions/zags-payment/tbank-ca.pem')" "$tmp" || fail 'Downloaded source does not use the mounted CA path'
+[[ -s "$functions_source/zags-payment/tbank-ca.pem" ]] || fail 'T-Bank CA bundle is missing from the mounted function directory'
 if grep -Fq '\n    client:' "$tmp"; then fail 'The parser error is still present in the downloaded file'; fi
 grep -Fq 'client: await getTbankHttpClient(),' "$tmp" || fail 'Expected T-Bank HTTP client line is missing'
 cp -a "$functions_source/zags-payment/index.ts" "$backup"
