@@ -1,0 +1,20 @@
+// Staging preview must never expose password, payments, service role, PII or customer route.
+"use strict";
+const fs=require("node:fs"),vm=require("node:vm"),assert=require("node:assert/strict");
+const html=fs.readFileSync("zags/beget-preview.html","utf8");
+const scripts=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(x=>x[1]);
+assert.equal(scripts.length,1,"staging must be standalone and have exactly one JS source");
+assert.doesNotThrow(()=>new vm.Script(scripts[0],{filename:"beget-preview.html"}),"JS must parse");
+assert.match(scripts[0],/const PREVIEW_ENABLED=false;/,"preview must be disabled");
+assert.match(scripts[0],/const ANON_KEY="";/,"preview must not bundle an active API key");
+assert.match(scripts[0],/async function jwt\(/,"must use session-bound JWT");
+assert.match(scripts[0],/Authorization.*Bearer/,"must use Bearer JWT");
+assert.match(scripts[0],/\/rest\/v1\/rpc\/zags_v2_action/,"must call separate isolated RPC");
+assert.match(scripts[0],/history\.replaceState/,"must scrub invite fragment after visit");
+assert.doesNotMatch(scripts[0],/localStorage/,"must not persist session or secrets in localStorage");
+assert.doesNotMatch(scripts[0],/\bservice_role\b|sb_secret_/i,"must not contain service role secrets");
+assert.doesNotMatch(scripts[0],/\bpaymentRequest\b|\/v2\/Init\b|\/functions\/v1\/create-payment/,"must not initiate payment");
+assert.doesNotMatch(scripts[0],/\binnerHTML\s*=/,"must not inject user text as HTML");
+assert.match(html,/<meta name="robots" content="noindex,nofollow,noarchive">/);
+assert.match(html,/Не является|Официальный брак не регистрируется|Официальный брак не/);
+console.log("PASS: preview disabled, JavaScript parsed, auth isolated, no payments, no exposed service role");
